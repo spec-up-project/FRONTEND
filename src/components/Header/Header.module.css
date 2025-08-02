@@ -1,0 +1,309 @@
+.header {
+  background-color: white;
+  border-bottom: 1px solid rgb(229 231 235);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.container {
+  padding: 0 1.5rem;
+  height: 4rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logoIcon {
+  width: 2.25rem;
+  height: 2.25rem;
+  background: linear-gradient(to bottom right, rgb(59 130 246), rgb(37 99 235));
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+.logoIcon svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: white;
+}
+
+.logoText {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: rgb(17 24 39);
+}
+
+.navigation {
+  display: none;
+  align-items: center;
+  gap: 0.5rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  padding: 0.25rem;
+}
+
+@media (min-width: 768px) {
+  .navigation {
+    display: flex;
+  }
+}
+
+.navLink {
+  padding: 0.75rem 1.25rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  color: #64748b;
+  min-width: 100px;
+  text-align: center;
+}
+
+.navLink.active {
+  color: #1e40af;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  box-shadow: 0 4px 12px rgba(30, 64, 175, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+}
+
+.navLink.active::before {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: linear-gradient(90deg, #3b82f6, #1e40af);
+  border-radius: 2px;
+  animation: slideIn 0.3s ease-out;
+}
+
+.navLink.inactive {
+  color: #64748b;
+  background: transparent;
+}
+
+.navLink.inactive:hover {
+  color: #1e293b;
+  background: rgba(255, 255, 255, 0.7);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideIn {
+  from {
+    width: 0;
+    opacity: 0;
+  }
+  to {
+    width: 20px;
+    opacity: 1;
+  }
+}
+
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.actionButton {
+  padding: 0.5rem;
+  color: rgb(75 85 99);
+  border-radius: 0.5rem;
+  border: none;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.actionButton:hover {
+  color: rgb(17 24 39);
+  background-color: rgb(249 250 251);
+}
+
+.actionButton svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.notificationButton {
+  position: relative;
+}
+
+.notificationDot {
+  position: absolute;
+  top: 0.25rem;
+  right: 0.25rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  background-color: rgb(239 68 68);
+  border-radius: 9999px;
+}
+
+.divider {
+  width: 1px;
+  height: 1.5rem;
+  background-color: rgb(229 231 235);
+}
+
+.userProfileContainer {
+  position: relative;
+}
+
+.userProfile {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.userProfile:hover {
+  background-color: rgb(249 250 251);
+}
+
+.userAvatar {
+  width: 2.5rem !important;
+  height: 2.5rem !important;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 50% !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+  min-width: 2.5rem !important;
+  min-height: 2.5rem !important;
+  max-width: 2.5rem !important;
+  max-height: 2.5rem !important;
+  aspect-ratio: 1 / 1;
+  box-sizing: border-box;
+}
+
+.userAvatar::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+  border-radius: 50%;
+}
+
+.userProfile:hover .userAvatar {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.userInfo {
+  display: none;
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .userInfo {
+    display: block;
+  }
+}
+
+.userName {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: rgb(17 24 39);
+  margin: 0;
+}
+
+.userRole {
+  font-size: 0.75rem;
+  color: rgb(107 114 128);
+  margin: 0;
+}
+
+.userDropdown {
+  display: none;
+  color: rgb(156 163 175);
+}
+
+@media (min-width: 768px) {
+  .userDropdown {
+    display: block;
+  }
+}
+
+.userDropdown svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.dropdownMenu {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 0.5rem;
+  background: white;
+  border: 1px solid rgb(229 231 235);
+  border-radius: 0.5rem;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  min-width: 160px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-10px);
+  transition: all 0.2s;
+}
+
+.userProfileContainer:hover .dropdownMenu {
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+.dropdownItem {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: rgb(75 85 99);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.dropdownItem:hover {
+  background-color: rgb(249 250 251);
+  color: rgb(17 24 39);
+}
+
+.dropdownIcon {
+  width: 1rem;
+  height: 1rem;
+} 

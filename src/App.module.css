@@ -1,0 +1,12 @@
+.app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background-color: rgb(249 250 251);
+}
+
+.main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+} 
