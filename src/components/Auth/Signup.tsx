@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import styles from './Signup.module.css';
+import { API_CONFIG, apiRequest } from '../../config/api';
 
 interface SignupProps {
-  onSignup: (email: string, password: string, name: string) => void;
+  onSignup: (email: string, password: string, userName: string) => void;
   onBackToLogin: () => void;
 }
 
@@ -10,27 +11,139 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onBackToLogin }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [name, setName] = useState('');
+  const [userName, setUserName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  // 회원가입 API 호출 함수
+  const signupAPI = async (email: string, password: string, userName: string) => {
+    console.log('🔍 회원가입 API 호출 시작:', { email, userName, passwordLength: password.length });
+    
+    // 서버에서 기대하는 형식에 맞게 데이터 구성
+    // 서버 오류 메시지에 따르면 "name", "username" 필드는 인식하지 못함
+    const requestData = {
+      email: email.trim(),
+      password: password,
+      userName: userName.trim(),
+    };
+    
+    console.log('📤 전송할 데이터:', {
+      ...requestData,
+      password: '[HIDDEN]' // 보안을 위해 비밀번호는 숨김
+    });
+    
+    try {
+      const result = await apiRequest(API_CONFIG.ENDPOINTS.SIGNUP, {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
+      
+      console.log('🎉 회원가입 API 성공:', result);
+      return result;
+    } catch (error: any) {
+      console.error('💥 회원가입 API 실패:', error);
+      
+      // 더 자세한 에러 정보 로깅
+      if (error.message) {
+        console.error('에러 메시지:', error.message);
+      }
+      if (error.response) {
+        console.error('서버 응답:', error.response);
+      }
+      
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
+    console.log('📝 회원가입 폼 제출:', { email, userName, passwordLength: password.length });
+    
+    // 클라이언트 측 유효성 검사
+    if (!email.trim()) {
+      setError('이메일을 입력해주세요.');
+      return;
+    }
+    
+    if (!userName.trim()) {
+      setError('이름을 입력해주세요.');
+      return;
+    }
+    
+    if (!password) {
+      setError('비밀번호를 입력해주세요.');
+      return;
+    }
     
     if (password !== confirmPassword) {
-      alert('Passwords do not match');
+      console.log('❌ 비밀번호 불일치');
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
+
+    if (password.length < 6) {
+      console.log('❌ 비밀번호 길이 부족:', password.length);
+      setError('비밀번호는 최소 6자 이상이어야 합니다.');
+      return;
+    }
+    
+    // 이메일 형식 검증
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email.trim())) {
+      setError('올바른 이메일 형식을 입력해주세요.');
+      return;
+    }
+    
+    // 이름 길이 검증
+    if (userName.trim().length < 2) {
+      setError('이름은 최소 2자 이상이어야 합니다.');
       return;
     }
     
     setIsLoading(true);
+    console.log('⏳ 로딩 상태 시작');
     
     try {
-      await onSignup(email, password, name);
-    } catch (error) {
-      console.error('Signup failed:', error);
+      // API 호출
+      const result = await signupAPI(email, password, userName);
+      
+      console.log('✅ 회원가입 성공');
+      
+      // 성공 시 부모 컴포넌트의 onSignup 콜백 호출
+      await onSignup(email, password, userName);
+      
+      // 성공 메시지 표시
+      alert('회원가입이 완료되었습니다! 로그인 페이지로 이동합니다.');
+      
+      // 로그인 페이지로 이동
+      onBackToLogin();
+      
+    } catch (error: any) {
+      console.error('💥 회원가입 처리 실패:', error);
+      
+      // 더 구체적인 에러 메시지 처리
+      let errorMessage = '회원가입 중 오류가 발생했습니다.';
+      
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response && error.response.message) {
+        errorMessage = error.response.message;
+      } else if (error.status === 400) {
+        errorMessage = '입력 정보를 확인해주세요.';
+      } else if (error.status === 409) {
+        errorMessage = '이미 존재하는 이메일입니다.';
+      } else if (error.status === 422) {
+        errorMessage = '입력값이 유효하지 않습니다.';
+      }
+      
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
+      console.log('⏹️ 로딩 상태 종료');
     }
   };
 
@@ -55,8 +168,8 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onBackToLogin }) => {
             <input
               type="text"
               placeholder="Full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
               className={styles.input}
               required
             />
@@ -128,6 +241,8 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onBackToLogin }) => {
               </button>
             </div>
           </div>
+
+          {error && <p className={styles.errorMessage}>{error}</p>}
 
           <button 
             type="submit" 

@@ -1,0 +1,419 @@
+ /* 모달 오버레이 */
+ .modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+/* 모달 컨테이너 */
+.modalContainer {
+    background-color: #1e1e1e;
+    border-radius: 12px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+    width: 90%;
+    max-width: 1200px;
+    height: 80vh;
+    display: flex;
+    overflow: hidden;
+    animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* 모달 헤더 */
+.modalHeader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    padding: 16px 24px;
+    background-color: #2d2d2d;
+    border-bottom: 1px solid #3a3a3a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    z-index: 10;
+}
+
+.modalTitle {
+    color: #ffffff;
+    font-size: 16px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.modalActions {
+    display: flex;
+    gap: 8px;
+}
+
+.headerButton {
+    background-color: #3a3a3a;
+    border: none;
+    color: #ffffff;
+    padding: 8px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.headerButton:hover {
+    background-color: #4a4a4a;
+}
+
+.saveButton {
+    background-color: #0084ff;
+}
+
+.saveButton:hover {
+    background-color: #0073e6;
+}
+
+.closeButton {
+    background: none;
+    border: none;
+    color: #999;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.closeButton:hover {
+    background-color: #3a3a3a;
+    color: #fff;
+}
+
+/* 메인 컨텐츠 영역 */
+.modalContent {
+    display: flex;
+    flex: 1;
+    margin-top: 65px;
+}
+
+/* 왼쪽 폼 영역 */
+.leftSection {
+    flex: 1;
+    padding: 24px;
+    overflow-y: auto;
+    background-color: #1e1e1e;
+}
+
+.formGroup {
+    margin-bottom: 24px;
+}
+
+.formLabel {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #999;
+    font-size: 12px;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.formIcon {
+    width: 16px;
+    height: 16px;
+    opacity: 0.6;
+}
+
+.titleInput {
+    width: 100%;
+    padding: 12px;
+    background-color: #2d2d2d;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 500;
+    transition: all 0.2s;
+}
+
+.titleInput:focus {
+    outline: none;
+    border-color: #0084ff;
+    background-color: #363636;
+}
+
+.contentTextarea {
+    width: 100%;
+    min-height: 200px;
+    padding: 12px;
+    background-color: #2d2d2d;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 14px;
+    line-height: 1.6;
+    resize: vertical;
+    transition: all 0.2s;
+}
+
+.contentTextarea:focus {
+    outline: none;
+    border-color: #0084ff;
+    background-color: #363636;
+}
+
+/* 날짜 시간 선택 영역 */
+.dateTimeRow {
+    display: flex;
+    gap: 16px;
+}
+
+.dateTimeGroup {
+    flex: 1;
+}
+
+.dateTimeInput {
+    width: 100%;
+    padding: 10px;
+    background-color: #2d2d2d;
+    border: 1px solid #3a3a3a;
+    border-radius: 6px;
+    color: #ffffff;
+    font-size: 14px;
+    transition: all 0.2s;
+}
+
+.dateTimeInput:focus {
+    outline: none;
+    border-color: #0084ff;
+    background-color: #363636;
+}
+
+/* 추가 옵션 영역 */
+.optionsGroup {
+    display: flex;
+    gap: 16px;
+    padding: 16px;
+    background-color: #2d2d2d;
+    border-radius: 6px;
+    margin-top: 24px;
+}
+
+.optionItem {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: #999;
+    font-size: 14px;
+}
+
+.optionItem input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #0084ff;
+}
+
+.toggle {
+    position: relative;
+    width: 44px;
+    height: 24px;
+    background-color: #3a3a3a;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.toggle.active {
+    background-color: #0084ff;
+}
+
+.toggleSlider {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    background-color: #ffffff;
+    border-radius: 50%;
+    transition: transform 0.3s;
+}
+
+.toggle.active .toggleSlider {
+    transform: translateX(20px);
+}
+
+/* 오른쪽 타임라인 영역 */
+.rightSection {
+    width: 350px;
+    background-color: #262626;
+    border-left: 1px solid #3a3a3a;
+    display: flex;
+    flex-direction: column;
+}
+
+.timelineHeader {
+    padding: 16px;
+    border-bottom: 1px solid #3a3a3a;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.timelineTitle {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.timelineDate {
+    color: #999;
+    font-size: 13px;
+}
+
+.timelineContent {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px;
+}
+
+.timeSlot {
+    display: flex;
+    min-height: 60px;
+    border-bottom: 1px solid #333;
+    position: relative;
+}
+
+.timeLabel {
+    width: 60px;
+    padding: 8px;
+    color: #666;
+    font-size: 12px;
+    text-align: right;
+    border-right: 1px solid #333;
+}
+
+.timeContent {
+    flex: 1;
+    padding: 4px 8px;
+    position: relative;
+}
+
+.eventBlock {
+    background: linear-gradient(135deg, #0084ff, #0073e6);
+    border-radius: 4px;
+    padding: 8px;
+    margin: 2px 0;
+    color: #ffffff;
+    font-size: 12px;
+    position: relative;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.eventBlock:hover {
+    transform: translateX(2px);
+    box-shadow: 0 2px 8px rgba(0, 132, 255, 0.3);
+}
+
+.eventBlock.current {
+    background: linear-gradient(135deg, #00d4ff, #0084ff);
+    box-shadow: 0 2px 12px rgba(0, 212, 255, 0.4);
+}
+
+.currentTimeLine {
+    position: absolute;
+    left: 60px;
+    right: 0;
+    height: 2px;
+    background-color: #ff4444;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.currentTimeLine::before {
+    content: '';
+    position: absolute;
+    left: -4px;
+    top: -3px;
+    width: 8px;
+    height: 8px;
+    background-color: #ff4444;
+    border-radius: 50%;
+}
+
+/* 스크롤바 스타일 */
+.leftSection::-webkit-scrollbar,
+.timelineContent::-webkit-scrollbar,
+.contentTextarea::-webkit-scrollbar {
+    width: 8px;
+}
+
+.leftSection::-webkit-scrollbar-track,
+.timelineContent::-webkit-scrollbar-track,
+.contentTextarea::-webkit-scrollbar-track {
+    background: #2d2d2d;
+    border-radius: 4px;
+}
+
+.leftSection::-webkit-scrollbar-thumb,
+.timelineContent::-webkit-scrollbar-thumb,
+.contentTextarea::-webkit-scrollbar-thumb {
+    background: #4a4a4a;
+    border-radius: 4px;
+}
+
+.leftSection::-webkit-scrollbar-thumb:hover,
+.timelineContent::-webkit-scrollbar-thumb:hover,
+.contentTextarea::-webkit-scrollbar-thumb:hover {
+    background: #5a5a5a;
+}
+
+/* 반응형 디자인 */
+@media (max-width: 768px) {
+    .modalContainer {
+        flex-direction: column;
+        width: 95%;
+        height: 90vh;
+    }
+    
+    .rightSection {
+        width: 100%;
+        border-left: none;
+        border-top: 1px solid #3a3a3a;
+    }
+    
+    .dateTimeRow {
+        flex-direction: column;
+    }
+}

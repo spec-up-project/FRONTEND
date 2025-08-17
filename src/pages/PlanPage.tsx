@@ -1,7 +1,8 @@
 import React from 'react';
 import Header from '../components/Header/Header';
 import Calendar from '../components/Calendar/Calendar';
-import Chat from '../components/Chat/Chat';
+import type { CalendarRef } from '../components/Calendar/Calendar';
+import ScheduleCreator from '../components/Chat/ScheduleCreator';
 import styles from '../App.module.css';
 
 interface PlanPageProps {
@@ -19,6 +20,17 @@ const PlanPage: React.FC<PlanPageProps> = ({
   onCalendarClick,
   currentPage = 'calendar'
 }) => {
+  // 캘린더 새로고침 함수를 위한 ref
+  const calendarRef = React.useRef<{ fetchSchedules: () => void } | null>(null);
+
+  // 스케줄 생성 완료 후 캘린더 새로고침
+  const handleScheduleCreated = () => {
+    console.log('🔄 스케줄 생성 완료 - 캘린더 새로고침 시작');
+    if (calendarRef.current) {
+      calendarRef.current.fetchSchedules();
+    }
+  };
+
   return (
     <div className={styles.app}>
       <Header 
@@ -29,8 +41,8 @@ const PlanPage: React.FC<PlanPageProps> = ({
         currentPage={currentPage}
       />
       <div className={styles.main}>
-        <Calendar />
-        <Chat />
+        <Calendar ref={calendarRef} />
+        <ScheduleCreator onScheduleCreated={handleScheduleCreated} />
       </div>
     </div>
   );

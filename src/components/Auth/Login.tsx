@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import styles from './Login.module.css';
+import { API_CONFIG, apiRequest } from '../../config/api';
+import { tokenManager } from './TokenManger';
+import type { LoginResponse } from './TokenManger';
 
 interface LoginPageProps {
   onLogin: (email: string, password: string) => void;
@@ -11,17 +14,65 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignupClick }) => {
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [error, setError] = useState('');
+
+  // 로그인 API 호출 함수
+  const loginAPI = async (email: string, password: string): Promise<LoginResponse> => {
+    console.log('🔍 로그인 API 호출 시작:', { email, passwordLength: password.length });
+    
+    const requestData = {
+      email,
+      password,
+    };
+    
+    console.log('📤 전송할 데이터:', requestData);
+    
+    try {
+      const result: LoginResponse = await apiRequest(API_CONFIG.ENDPOINTS.LOGIN, {
+        method: 'POST',
+        body: JSON.stringify(requestData),
+      });
+      
+      console.log('🎉 로그인 API 성공:', {
+        userName: result.userName,
+        email: result.email,
+        hasAccessToken: !!result.accessToken
+      });
+      
+      return result;
+    } catch (error) {
+      console.error('💥 로그인 API 실패:', error);
+      throw error;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError('');
+    
+    console.log('📝 로그인 폼 제출:', { email, passwordLength: password.length });
+    
     setIsLoading(true);
+    console.log('⏳ 로딩 상태 시작');
     
     try {
+      // API 호출
+      const loginResponse = await loginAPI(email, password);
+      
+      // 토큰 저장
+      tokenManager.setTokens(loginResponse);
+      
+      console.log('✅ 로그인 성공, 부모 콜백 호출');
+      
+      // 성공 시 부모 컴포넌트의 onLogin 콜백 호출
       await onLogin(email, password);
-    } catch (error) {
-      console.error('Login failed:', error);
+      
+    } catch (error: any) {
+      console.error('💥 로그인 처리 실패:', error);
+      setError(error.message || '로그인에 실패했습니다.');
     } finally {
       setIsLoading(false);
+      console.log('⏹️ 로딩 상태 종료');
     }
   };
 
@@ -80,6 +131,8 @@ const LoginPage: React.FC<LoginPageProps> = ({ onLogin, onSignupClick }) => {
               </button>
             </div>
           </div>
+
+          {error && <p className={styles.errorMessage}>{error}</p>}
 
           <button 
             type="submit" 
