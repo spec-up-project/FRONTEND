@@ -1,13 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
+import ReactMarkdown from 'react-markdown';
+import { API_CONFIG, authenticatedApiRequest } from '../../config/api';
+import type { ScheduleDetail } from '../Task/types';
 import styles from './ReportViewModal.module.css';
-
-interface Issue {
-  id: string;
-  title: string;
-  description: string;
-  priority: 'high' | 'medium' | 'low';
-  status: 'open' | 'in-progress' | 'resolved';
-}
 
 interface ReportViewModalProps {
   isOpen: boolean;
@@ -25,105 +20,72 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({
   onClose,
   report
 }) => {
-  // 샘플 데이터
-  const majorIssues: Issue[] = [
-    {
-      id: '1',
-      title: '프로젝트 일정 지연',
-      description: '개발 환경 설정으로 인한 2일 지연 발생',
-      priority: 'high',
-      status: 'in-progress'
-    },
-    {
-      id: '2',
-      title: '팀원 이직',
-      description: '주요 개발자 1명 이직으로 인한 인력 부족',
-      priority: 'high',
-      status: 'open'
-    },
-    {
-      id: '3',
-      title: '예산 초과',
-      description: '외부 라이브러리 구매로 인한 예산 10% 초과',
-      priority: 'medium',
-      status: 'resolved'
-    }
-  ];
+  const [scheduleDetails, setScheduleDetails] = useState<ScheduleDetail[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const minorIssues: Issue[] = [
-    {
-      id: '4',
-      title: '코드 리뷰 지연',
-      description: 'PR 리뷰가 평균 3일 지연되고 있음',
-      priority: 'medium',
-      status: 'open'
-    },
-    {
-      id: '5',
-      title: '문서화 부족',
-      description: 'API 문서 업데이트가 필요함',
-      priority: 'low',
-      status: 'open'
-    },
-    {
-      id: '6',
-      title: '테스트 커버리지 부족',
-      description: '현재 테스트 커버리지 60%로 목표 80% 미달',
-      priority: 'medium',
-      status: 'in-progress'
-    }
-  ];
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return '#ef4444';
-      case 'medium':
-        return '#f59e0b';
-      case 'low':
-        return '#10b981';
-      default:
-        return '#6b7280';
+  // 스케줄 상세 정보 가져오기
+  const fetchScheduleDetails = async (reportUid: string) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      console.log('📊 스케줄 상세 정보 가져오기 시작:', reportUid);
+      
+      // 리포트 ID를 reportUid로 사용하여 상세 정보 조회
+      const result = await authenticatedApiRequest(
+        `${API_CONFIG.ENDPOINTS.GET_SCHEDULE_DETAIL}/${reportUid}`,
+        {
+          method: 'GET',
+        }
+      );
+      
+      console.log('✅ 스케줄 상세 정보 가져오기 성공:', result);
+      
+      // null 체크 추가
+      if (!result) {
+        console.log('⚠️ 서버에서 빈 응답을 받았습니다.');
+        setScheduleDetails([]);
+        return;
+      }
+      
+      // 응답이 배열인지 단일 객체인지 확인
+      const details = Array.isArray(result) ? result : [result];
+      setScheduleDetails(details);
+      
+    } catch (error: unknown) {
+      console.error('💥 스케줄 상세 정보 가져오기 실패:', error);
+      const errorMessage = error instanceof Error ? error.message : '스케줄 상세 정보를 불러오는데 실패했습니다.';
+      setError(errorMessage);
+      setScheduleDetails([]); // 에러 시 빈 배열로 설정
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const getPriorityText = (priority: string) => {
-    switch (priority) {
-      case 'high':
-        return '높음';
-      case 'medium':
-        return '보통';
-      case 'low':
-        return '낮음';
-      default:
-        return '미정';
+  // 모달이 열릴 때 스케줄 상세 정보 가져오기
+  useEffect(() => {
+    if (isOpen && report) {
+      console.log(report)
+      console.log(report.id)
+      fetchScheduleDetails(report.id);
     }
+  }, [isOpen, report]);
+
+  const formatDateTime = (dateTimeString: string) => {
+    const date = new Date(dateTimeString);
+    return date.toLocaleString('ko-KR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-        return '#6b7280';
-      case 'in-progress':
-        return '#3b82f6';
-      case 'resolved':
-        return '#10b981';
-      default:
-        return '#6b7280';
-    }
-  };
-
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'open':
-        return '대기중';
-      case 'in-progress':
-        return '진행중';
-      case 'resolved':
-        return '해결됨';
-      default:
-        return '미정';
-    }
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('ko-KR');
   };
 
   const handleExportExcel = () => {
@@ -154,69 +116,112 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({
         </div>
 
         <div className={styles.modalContent}>
-          {/* 대분류 이슈 섹션 */}
-          <div className={styles.issueSection}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>대분류 이슈</h3>
-              <span className={styles.issueCount}>{majorIssues.length}개</span>
+          {isLoading && (
+            <div className={styles.loadingState}>
+              <div className={styles.loadingSpinner}></div>
+              <p>스케줄 정보를 불러오는 중...</p>
             </div>
-            <div className={styles.issueList}>
-              {majorIssues.map((issue) => (
-                <div key={issue.id} className={styles.issueItem}>
-                  <div className={styles.issueHeader}>
-                    <h4 className={styles.issueTitle}>{issue.title}</h4>
-                    <div className={styles.issueBadges}>
-                      <span 
-                        className={styles.priorityBadge}
-                        style={{ backgroundColor: getPriorityColor(issue.priority) }}
-                      >
-                        {getPriorityText(issue.priority)}
-                      </span>
-                      <span 
-                        className={styles.statusBadge}
-                        style={{ backgroundColor: getStatusColor(issue.status) }}
-                      >
-                        {getStatusText(issue.status)}
-                      </span>
-                    </div>
-                  </div>
-                  <p className={styles.issueDescription}>{issue.description}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
 
-          {/* 중분류 이슈 섹션 */}
-          <div className={styles.issueSection}>
-            <div className={styles.sectionHeader}>
-              <h3 className={styles.sectionTitle}>중분류 이슈</h3>
-              <span className={styles.issueCount}>{minorIssues.length}개</span>
+          {error && (
+            <div className={styles.errorState}>
+              <p className={styles.errorMessage}>{error}</p>
             </div>
-            <div className={styles.issueList}>
-              {minorIssues.map((issue) => (
-                <div key={issue.id} className={styles.issueItem}>
-                  <div className={styles.issueHeader}>
-                    <h4 className={styles.issueTitle}>{issue.title}</h4>
-                    <div className={styles.issueBadges}>
-                      <span 
-                        className={styles.priorityBadge}
-                        style={{ backgroundColor: getPriorityColor(issue.priority) }}
-                      >
-                        {getPriorityText(issue.priority)}
-                      </span>
-                      <span 
-                        className={styles.statusBadge}
-                        style={{ backgroundColor: getStatusColor(issue.status) }}
-                      >
-                        {getStatusText(issue.status)}
-                      </span>
+          )}
+
+          {!isLoading && !error && scheduleDetails.length > 0 && (
+            <div className={styles.scheduleSection}>
+              <div className={styles.sectionHeader}>
+                <h3 className={styles.sectionTitle}>스케줄 상세 정보</h3>
+                <span className={styles.scheduleCount}>{scheduleDetails.length}개</span>
+              </div>
+              <div className={styles.scheduleList}>
+                {scheduleDetails.map((schedule) => (
+                  <div key={schedule.scheduleUid} className={styles.scheduleItem}>
+                    <div className={styles.scheduleHeader}>
+                      <h4 className={styles.scheduleTitle}>{schedule.title || '제목 없음'}</h4>
+                      <div className={styles.scheduleBadges}>
+                        <span className={styles.categoryBadge}>
+                          {schedule.mainCategory || '카테고리 없음'}
+                        </span>
+                        {schedule.subCategory && (
+                          <span className={styles.subCategoryBadge}>
+                            {schedule.subCategory}
+                          </span>
+                        )}
+                        {schedule.isAllDay && (
+                          <span className={styles.allDayBadge}>종일</span>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className={styles.scheduleInfo}>
+                      <div className={styles.timeInfo}>
+                        <span className={styles.timeLabel}>시작:</span>
+                        <span className={styles.timeValue}>
+                          {schedule.startTime ? formatDateTime(schedule.startTime) : '시간 정보 없음'}
+                        </span>
+                      </div>
+                      <div className={styles.timeInfo}>
+                        <span className={styles.timeLabel}>종료:</span>
+                        <span className={styles.timeValue}>
+                          {schedule.endTime ? formatDateTime(schedule.endTime) : '시간 정보 없음'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {schedule.content && (
+                      <div className={styles.contentSection}>
+                        <h5 className={styles.contentTitle}>내용</h5>
+                        <div className={styles.contentText}>
+                          <ReactMarkdown>{schedule.content}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+
+                    {schedule.rawText && (
+                      <div className={styles.rawTextSection}>
+                        <h5 className={styles.rawTextTitle}>원본 텍스트</h5>
+                        <div className={styles.rawTextContent}>
+                          <ReactMarkdown>{schedule.rawText}</ReactMarkdown>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className={styles.metaInfo}>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>생성일:</span>
+                        <span className={styles.metaValue}>
+                          {schedule.createDate ? formatDate(schedule.createDate) : '날짜 정보 없음'}
+                        </span>
+                      </div>
+                      <div className={styles.metaItem}>
+                        <span className={styles.metaLabel}>수정일:</span>
+                        <span className={styles.metaValue}>
+                          {schedule.modifyDate ? formatDate(schedule.modifyDate) : '날짜 정보 없음'}
+                        </span>
+                      </div>
+                      {schedule.source && (
+                        <div className={styles.metaItem}>
+                          <span className={styles.metaLabel}>출처:</span>
+                          <span className={styles.metaValue}>{schedule.source}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
-                  <p className={styles.issueDescription}>{issue.description}</p>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
+          )}
+
+          {!isLoading && !error && scheduleDetails.length === 0 && (
+            <div className={styles.emptyState}>
+              <p>해당 리포트에 연결된 스케줄이 없습니다.</p>
+              <p className={styles.emptySubText}>
+                서버에서 스케줄 정보를 찾을 수 없거나, 아직 스케줄이 생성되지 않았습니다.
+              </p>
+            </div>
+          )}
         </div>
 
         <div className={styles.modalActions}>

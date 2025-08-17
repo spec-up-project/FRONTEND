@@ -13,7 +13,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
   onCalendarClick,
   currentPage = 'task'
 }) => {
-  const { reports, isLoading, error } = useReports();
+  const { reports, isLoading, error, fetchReports } = useReports();
   
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedReport, setSelectedReport] = useState<WeeklyReport | null>(null);
@@ -30,6 +30,12 @@ const TaskPage: React.FC<TaskPageProps> = ({
     setSelectedReport(null);
   };
 
+  // 주간일정 생성 완료 후 리포트 목록 새로고침
+  const handleScheduleCreated = () => {
+    console.log('주 주간일정 생성 완료 - 리포트 목록 새로고침 시작');
+    fetchReports();
+  };
+
   return (
     <div className={styles.container}>
       <Header 
@@ -41,7 +47,6 @@ const TaskPage: React.FC<TaskPageProps> = ({
       />
       
       <div className={styles.main}>
-
         <div className={styles.contentRow}>
           <div className={styles.leftPane}>
             <div className={styles.fillChild}>
@@ -55,7 +60,7 @@ const TaskPage: React.FC<TaskPageProps> = ({
             </div>
           </div>
           <div className={styles.rightPane}>
-            <WeeklyScheduleCreator onScheduleCreated={() => {}} />
+            <WeeklyScheduleCreator onScheduleCreated={handleScheduleCreated} />
           </div>
         </div>
       </div>

@@ -101,50 +101,51 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
       
       // API 응답을 캘린더 이벤트 형식으로 변환
       const convertedEvents: Event[] = schedules
-  .map((schedule: ScheduleEvent, index: number) => {
-    let dateToUse = schedule.startTime;
-    if (!dateToUse || dateToUse === null) {
-      if (schedule.createDate) {
-        dateToUse = schedule.createDate;
-      } else {
-        dateToUse = new Date().toISOString();
-      }
-    }
+        .map((schedule: ScheduleEvent, index: number) => {
+          // startTime이 null이거나 undefined인 경우 처리
+          let dateToUse = schedule.startTime;
+          if (!dateToUse || dateToUse === null || dateToUse === undefined) {
+            if (schedule.createDate) {
+              dateToUse = schedule.createDate;
+            } else {
+              dateToUse = new Date().toISOString();
+            }
+          }
 
-    const startDate = new Date(dateToUse);
-    const endDate = schedule.endTime ? new Date(schedule.endTime) : new Date(startDate.getTime() + 60 * 60 * 1000);
+          const startDate = new Date(dateToUse);
+          const endDate = schedule.endTime ? new Date(schedule.endTime) : new Date(startDate.getTime() + 60 * 60 * 1000);
 
-    if (isNaN(startDate.getTime())) {
-      console.warn('⚠️ 유효하지 않은 날짜:', dateToUse);
-      return null;
-    }
+          if (isNaN(startDate.getTime())) {
+            console.warn('⚠️ 유효하지 않은 날짜:', dateToUse);
+            return null;
+          }
 
-    const event: Event = {
-      id: schedule.tscheduleUid,
-      date: startDate.toISOString().split('T')[0],
-      time: startDate.toLocaleTimeString('ko-KR', {
-        hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
-      }),
-      title: schedule.title,
-      content: schedule.content,
-      rawText: schedule.rawText,           // 🔥 중요! 이걸 빼먹었었어!
-      startTime: `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`,
-      endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
-      color: colors[index % colors.length],
-      isAllDay: false,
-      hasTeamsMeeting: false,
-      hasReminder: false,
-      createDate: schedule.createDate,     // 🔥 추가
-      modifyDate: schedule.modifyDate,     // 🔥 추가
-      tscheduleUid: schedule.tscheduleUid, // 🔥 추가
-      source: schedule.source              // 🔥 추가
-    };
+          const event: Event = {
+            id: schedule.tscheduleUid || `event-${index}`,
+            date: startDate.toISOString().split('T')[0],
+            time: startDate.toLocaleTimeString('ko-KR', {
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: true
+            }),
+            title: schedule.title || '제목 없음',
+            content: schedule.content || '',
+            rawText: schedule.rawText || '',
+            startTime: `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`,
+            endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
+            color: colors[index % colors.length],
+            isAllDay: false,
+            hasTeamsMeeting: false,
+            hasReminder: false,
+            createDate: schedule.createDate,
+            modifyDate: schedule.modifyDate,
+            tscheduleUid: schedule.tscheduleUid,
+            source: schedule.source
+          };
 
-    return event;
-  })
-  .filter((event): event is Event => event !== null);
+          return event;
+        })
+        .filter((event): event is Event => event !== null);
       
       setEvents(convertedEvents);
       
@@ -310,7 +311,12 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
   const getEventsForDate = (date: string) => {
     return events
       .filter(event => event.date === date)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+      .sort((a, b) => {
+        // startTime이 null이거나 undefined인 경우 처리
+        const aTime = a.startTime || '';
+        const bTime = b.startTime || '';
+        return aTime.localeCompare(bTime);
+      });
   };
 
   return (

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import styles from './Header.module.css';
 
 interface HeaderProps {
@@ -16,14 +16,46 @@ const Header: React.FC<HeaderProps> = ({
   onCalendarClick,
   currentPage = 'calendar'
 }) => {
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const getUserInitials = (email: string) => {
     return email.split('@')[0].substring(0, 2).toUpperCase();
   };
 
+  const handleLogoutClick = () => {
+    console.log('🚪 로그아웃 버튼 클릭됨');
+    setIsDropdownOpen(false);
+    onLogout();
+  };
+
+  const toggleDropdown = () => {
+    console.log('🔄 드롭다운 토글:', !isDropdownOpen);
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
+  // 외부 클릭 시 드롭다운 닫기
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+    };
+
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   // 디버깅을 위한 콘솔 로그
   console.log('Header currentPage:', currentPage);
-  console.log('Calendar button class:', `${styles.navLink} ${currentPage === 'calendar' ? styles.active : styles.inactive}`);
-  console.log('Task button class:', `${styles.navLink} ${currentPage === 'task' ? styles.active : styles.inactive}`);
+  console.log('Header onLogout function:', typeof onLogout);
+  console.log('Header user:', user);
+  console.log('Header isDropdownOpen:', isDropdownOpen);
 
   return (
     <header className={styles.header}>
@@ -70,14 +102,13 @@ const Header: React.FC<HeaderProps> = ({
           <div className={styles.divider}></div>
 
           {/* User Profile */}
-          <div className={styles.userProfileContainer}>
-            <button className={styles.userProfile}>
+          <div className={styles.userProfileContainer} ref={dropdownRef}>
+            <button className={styles.userProfile} onClick={toggleDropdown}>
               <div className={styles.userAvatar}>
                 {user ? getUserInitials(user.email) : 'U'}
               </div>
               <div className={styles.userInfo}>
                 <p className={styles.userName}>{user ? user.email.split('@')[0] : 'User'}</p>
-              
               </div>
               <svg className={styles.userDropdown} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -85,14 +116,16 @@ const Header: React.FC<HeaderProps> = ({
             </button>
             
             {/* Dropdown Menu */}
-            <div className={styles.dropdownMenu}>
-              <button onClick={onLogout} className={styles.dropdownItem}>
-                <svg className={styles.dropdownIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Sign Out
-              </button>
-            </div>
+            {isDropdownOpen && (
+              <div className={styles.dropdownMenu}>
+                <button onClick={handleLogoutClick} className={styles.dropdownItem}>
+                  <svg className={styles.dropdownIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                  Sign Out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

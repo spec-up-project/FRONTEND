@@ -3,10 +3,7 @@ import { API_CONFIG, authenticatedApiRequest } from '../../../config/api';
 import styles from './WeeklyScheduleCreator.module.css';
 
 interface ScheduleData {
-  title: string;
-  content: string;
-  rawText: string;
-  source: string;
+  chat: string;
 }
 
 interface Message {
@@ -65,6 +62,18 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       return;
     }
 
+    // 200자 제한 검증
+    if (rawText.trim().length > 200) {
+      const errorMessage: Message = {
+        id: Date.now().toString(),
+        text: '텍스트는 200자 이내로 입력해주세요!',
+        timestamp: new Date(),
+        type: 'system'
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      return;
+    }
+
     setIsLoading(true);
 
     // 사용자 입력 메시지 추가
@@ -80,19 +89,16 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       console.log('📅 주간일정 생성 요청 시작');
       
       const scheduleData: ScheduleData = {
-        title: title.trim() || '',
-        content: content.trim() || '',
-        rawText: rawText.trim(),
-        source: source.trim() || 'weekly'
+        chat: rawText.trim()
       };
 
       console.log('📤 전송할 주간일정 데이터:', scheduleData);
       
       // TaskPage용 API 엔드포인트 사용 (예: CREATE_WEEKLY_SCHEDULE)
-      const result = await authenticatedApiRequest('/api/schedule/weekly', {
+      const result = await authenticatedApiRequest('/api/report/chat', {
         method: 'POST',
         body: JSON.stringify(scheduleData),
-      });
+      }, 600000); // 타임아웃을 30초로 증가
       
       console.log('✅ 주간일정 생성 성공:', result);
       
@@ -105,7 +111,7 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       };
       setMessages(prev => [...prev, successMessage]);
       
-      // 콜백 호출
+      // 콜백 호출 - 리포트 목록 새로고침
       if (onScheduleCreated) {
         onScheduleCreated();
       }
@@ -194,63 +200,8 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       {/* Form Fields */}
       <div className={styles.formFields} style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-              제목 (Title)
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="주간일정 제목을 입력하세요"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor="source" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-              소스 (Source)
-            </label>
-            <input
-              id="source"
-              type="text"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="출처 또는 분류"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="content" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-            내용 요약 (Content)
-          </label>
-          <input
-            id="content"
-            type="text"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="주간일정 내용 요약"
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem'
-            }}
-          />
+        
+
         </div>
       </div>
 
@@ -263,7 +214,7 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
               value={rawText}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="상세 내용을 입력하세요... (필수)"
+              placeholder="상세 내용을 입력하세요... (200자 이내, 필수)"
               rows={3}
               className={styles.textarea}
               style={{ minHeight: '60px' }}

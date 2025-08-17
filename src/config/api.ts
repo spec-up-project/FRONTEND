@@ -8,12 +8,19 @@ export const API_CONFIG = {
     LOGOUT: '/api/user/logout',
     
     // 인증 필요한 API들
-    CREATE_TASK: '/api/schedule',
+    CREATE_TASK: '/api/schedule/auto',
     UPDATE_TASK: '/api/schedule',
+    UPDATE_SCHEDULE_MANUAL: '/api/schedule/manual/update',
+    UPDATE_SCHEDULE: '/api/schedule',
+    CREATE_SCHEDULE: '/api/schedule/auto',
+    DELETE_SCHEDULE: '/api/schedule',
+    DELETE_SCHEDULE_MANUAL: '/api/schedule/manual/delete', // 🔥 추가: 수동 삭제 엔드포인트
     GET_SCHEDULES: '/api/schedule/manual/calendar',
+
+    GET_SCHEDULE_DETAIL: '/api/report/detail',
     
     // 리포트 관련 API들
-    WEEKLY_REPORTS: '/api/reports/weekly',
+    WEEKLY_REPORTS: '/api/report',
     CREATE_REPORT: '/api/reports/create',
   },
 };
@@ -96,7 +103,7 @@ const checkAndRefreshTokenIfNeeded = async (): Promise<void> => {
 export const apiRequest = async (
   endpoint: string,
   options: RequestInit = {},
-  timeout: number = 10000 // 10초 타임아웃
+  timeout: number = 3000000 // 10초 타임아웃
 ): Promise<any> => {
   const url = `${API_CONFIG.BASE_URL}${endpoint}`;
   
@@ -106,10 +113,23 @@ export const apiRequest = async (
   }
   
   // 기본 헤더 설정
-  const headers = {
-    'Content-Type': 'application/json',
-    ...options.headers,
-  };
+  const headers: Record<string, string> = {};
+  
+  // GET 요청이 아닐 때만 Content-Type 헤더 추가
+  if (options.method !== 'GET') {
+    headers['Content-Type'] = 'application/json';
+  }
+  
+  // 사용자가 제공한 헤더 추가 (Content-Type이 이미 있으면 덮어쓰지 않음)
+  if (options.headers) {
+    Object.entries(options.headers).forEach(([key, value]) => {
+      // GET 요청에서는 Content-Type을 강제로 제거
+      if (options.method === 'GET' && key.toLowerCase() === 'content-type') {
+        return;
+      }
+      headers[key] = value as string;
+    });
+  }
 
   // 인증 헤더 자동 추가 (로그인/회원가입 제외)
   if (!endpoint.includes('/login') && !endpoint.includes('/register') && authService.isAuthenticated()) {
@@ -127,6 +147,11 @@ export const apiRequest = async (
     credentials: 'include', // HttpOnly Cookie 자동 포함
     ...options,
   };
+
+  // GET 요청에서는 body 제거
+  if (options.method === 'GET') {
+    delete defaultOptions.body;
+  }
 
   // 요청 로깅
   logApiRequest(url, defaultOptions);
@@ -148,11 +173,58 @@ export const apiRequest = async (
     // 응답 헤더 로깅
     console.log('📋 응답 헤더:', Object.fromEntries(response.headers.entries()));
     
-    // 401 에러 시 자동 로그아웃
+    // 401 에러 시 토큰 갱신 시도 후 재요청
     if (response.status === 401) {
-      console.warn('🚫 인증 실패 - 자동 로그아웃');
-      await authService.logout();
-      throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+      console.warn('🚫 인증 실패 - 토큰 갱신 시도');
+      try {
+        // 토큰 갱신 시도
+        await authService.checkAndRefreshToken();
+        console.log('✅ 토큰 갱신 성공 - 재요청 시도');
+        
+        // 새로운 토큰으로 재요청
+        const newAuthHeaders = authService.getAuthHeaders();
+        const newHeaders = {
+          ...headers,
+          ...newAuthHeaders
+        };
+        
+        const retryOptions: RequestInit = {
+          ...defaultOptions,
+          headers: newHeaders
+        };
+        
+        const retryResponse = await Promise.race([
+          fetch(url, retryOptions),
+          createTimeoutPromise(timeout)
+        ]);
+        
+        if (retryResponse.status === 401) {
+          console.warn('🚫 토큰 갱신 후에도 인증 실패 - 로그아웃');
+          await authService.logout();
+          throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+        }
+        
+        // 재요청 성공 시 원래 응답 처리 로직 계속
+        if (!retryResponse.ok) {
+          throw new Error(`HTTP error! status: ${retryResponse.status}`);
+        }
+        
+        let data;
+        try {
+          data = await retryResponse.json();
+          logApiResponse(retryResponse, data);
+        } catch (parseError) {
+          console.log('⚠️ 성공 응답 파싱 실패:', parseError);
+          data = null;
+        }
+        
+        return data;
+        
+      } catch (refreshError) {
+        console.error('💥 토큰 갱신 실패:', refreshError);
+        await authService.logout();
+        throw new Error('인증이 만료되었습니다. 다시 로그인해주세요.');
+      }
     }
     
     if (!response.ok) {

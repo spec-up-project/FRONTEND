@@ -314,3 +314,338 @@
     padding: 1rem;
   }
 } 
+
+.loadingState {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  text-align: center;
+}
+
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #e2e8f0;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorState {
+  padding: 2rem;
+  text-align: center;
+}
+
+.errorMessage {
+  color: #ef4444;
+  font-size: 0.875rem;
+}
+
+.scheduleSection {
+  margin-bottom: 2rem;
+}
+
+.scheduleList {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.scheduleItem {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+}
+
+.scheduleHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+}
+
+.scheduleTitle {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0;
+  flex: 1;
+}
+
+.scheduleBadges {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.categoryBadge {
+  background: #3b82f6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.subCategoryBadge {
+  background: #8b5cf6;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.allDayBadge {
+  background: #10b981;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.scheduleInfo {
+  margin-bottom: 1rem;
+}
+
+.timeInfo {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.timeLabel {
+  font-weight: 500;
+  color: #64748b;
+  min-width: 60px;
+}
+
+.timeValue {
+  color: #1e293b;
+}
+
+.contentSection,
+.rawTextSection {
+  margin-bottom: 1rem;
+}
+
+.contentTitle,
+.rawTextTitle {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 0 0 0.5rem 0;
+}
+
+.contentText,
+.rawTextContent {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 0.75rem;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
+  white-space: pre-wrap;
+}
+
+/* 마크다운 스타일링 */
+.contentText h1,
+.rawTextContent h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #111827;
+  margin: 1rem 0 0.5rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+}
+
+.contentText h2,
+.rawTextContent h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 1rem 0 0.5rem 0;
+  padding-bottom: 0.25rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.contentText h3,
+.rawTextContent h3 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0.75rem 0 0.5rem 0;
+}
+
+.contentText h4,
+.rawTextContent h4 {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.contentText h5,
+.rawTextContent h5 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.contentText h6,
+.rawTextContent h6 {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 0.5rem 0 0.25rem 0;
+}
+
+.contentText p,
+.rawTextContent p {
+  margin: 0.5rem 0;
+  line-height: 1.6;
+}
+
+.contentText ul,
+.rawTextContent ul,
+.contentText ol,
+.rawTextContent ol {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+.contentText li,
+.rawTextContent li {
+  margin: 0.25rem 0;
+  line-height: 1.5;
+}
+
+.contentText blockquote,
+.rawTextContent blockquote {
+  border-left: 4px solid #3b82f6;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  color: #6b7280;
+  font-style: italic;
+}
+
+.contentText code,
+.rawTextContent code {
+  background: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 4px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+  color: #dc2626;
+}
+
+.contentText pre,
+.rawTextContent pre {
+  background: #1f2937;
+  color: #f9fafb;
+  padding: 1rem;
+  border-radius: 6px;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.contentText pre code,
+.rawTextContent pre code {
+  background: none;
+  padding: 0;
+  color: inherit;
+}
+
+.contentText strong,
+.rawTextContent strong {
+  font-weight: 600;
+  color: #111827;
+}
+
+.contentText em,
+.rawTextContent em {
+  font-style: italic;
+  color: #6b7280;
+}
+
+.contentText a,
+.rawTextContent a {
+  color: #3b82f6;
+  text-decoration: none;
+}
+
+.contentText a:hover,
+.rawTextContent a:hover {
+  text-decoration: underline;
+}
+
+.contentText hr,
+.rawTextContent hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 1.5rem 0;
+}
+
+.contentText table,
+.rawTextContent table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+}
+
+.contentText th,
+.rawTextContent th,
+.contentText td,
+.rawTextContent td {
+  border: 1px solid #e5e7eb;
+  padding: 0.5rem;
+  text-align: left;
+}
+
+.contentText th,
+.rawTextContent th {
+  background: #f9fafb;
+  font-weight: 600;
+}
+
+.metaInfo {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e2e8f0;
+}
+
+.metaItem {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.metaLabel {
+  font-weight: 500;
+  color: #64748b;
+  font-size: 0.875rem;
+}
+
+.metaValue {
+  color: #1e293b;
+  font-size: 0.875rem;
+}
+
+.emptyState {
+  text-align: center;
+  padding: 2rem;
+  color: #64748b;
+} 
