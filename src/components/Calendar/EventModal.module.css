@@ -148,13 +148,15 @@
   background-color: #363636;
 }
 
-/* 저장 버튼 */
-.saveButtonContainer {
+/* 버튼 컨테이너 (저장 + 삭제) */
+.buttonContainer {
   margin-top: 24px;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  align-items: center;
 }
 
+/* 저장 버튼 */
 .saveButton {
   background-color: #0084ff;
   color: #ffffff;
@@ -171,6 +173,25 @@
   background-color: #0073e6;
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 132, 255, 0.3);
+}
+
+/* 삭제 버튼 */
+.deleteButton {
+  background-color: #dc3545;
+  color: #ffffff;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.deleteButton:hover {
+  background-color: #c82333;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(220, 53, 69, 0.3);
 }
 
 
@@ -340,4 +361,14 @@ p .ak {
   .dateTimeRow {
     flex-direction: column;
   }
+} 
+
+.leftButtons {
+  display: flex;
+  gap: 12px;
+}
+
+.rightButtons {
+  display: flex;
+  gap: 12px;
 } 

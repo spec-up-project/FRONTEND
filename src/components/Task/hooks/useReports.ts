@@ -21,39 +21,29 @@ export const useReports = () => {
       });
       
       console.log('✅ 리포트 데이터 가져오기 성공:', result);
-      setReports(result.reports || []);
+      
+      // 서버 응답 데이터를 WeeklyReport 타입으로 변환
+      const mappedReports = (result || []).map((item: any) => ({
+        id: item.reportUid || item.id || Date.now().toString(),
+        title: item.title || '제목 없음',
+        date: item.createdAt || item.date || new Date().toISOString().split('T')[0],
+        status: item.status || 'completed', // 기본값을 completed로 설정
+        type: item.type || 'summary' // 기본값을 summary로 설정
+      }));
+      
+      console.log('📋 매핑된 리포트 데이터:', mappedReports);
+      setReports(mappedReports);
       
     } catch (error: any) {
       console.error('💥 리포트 데이터 가져오기 실패:', error);
+      console.error('💥 에러 상세 정보:', {
+        message: error.message,
+        status: error.status,
+        response: error.response
+      });
       setError(error.message || '리포트를 불러오는데 실패했습니다.');
       
-      // 개발 환경에서는 더미 데이터 사용
-      if (import.meta.env.DEV) {
-        console.log('🔄 개발 환경 - 더미 데이터 사용');
-        setReports([
-          {
-            id: '1',
-            title: '2024년 1주차 주간기록리포트',
-            date: '2024-01-07',
-            status: 'completed',
-            type: 'record'
-          },
-          {
-            id: '2',
-            title: '2024년 1주차 주간리포트',
-            date: '2024-01-07',
-            status: 'completed',
-            type: 'summary'
-          },
-          {
-            id: '3',
-            title: '2024년 2주차 주간기록리포트',
-            date: '2024-01-14',
-            status: 'draft',
-            type: 'record'
-          }
-        ]);
-      }
+        
     } finally {
       setIsLoading(false);
     }

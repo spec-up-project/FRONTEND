@@ -75,15 +75,20 @@ const App: React.FC = () => {
   };
 
   const handleLogout = async () => {
+    console.log('🚪 App handleLogout 시작');
     try {
+      console.log('🔐 authService.logout() 호출 중...');
       await authService.logout();
+      console.log('✅ authService.logout() 완료');
     } catch (error) {
-      console.error('로그아웃 중 오류:', error);
+      console.error('❌ 로그아웃 중 오류:', error);
     } finally {
+      console.log('🔄 상태 초기화 시작');
       setUser(null);
       setIsLoggedIn(false);
       setCurrentAuthPage('login');
       setCurrentMainPage('plan');
+      console.log('✅ 상태 초기화 완료 - 로그인 페이지로 이동');
     }
   };
 

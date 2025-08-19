@@ -272,16 +272,10 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   min-width: 160px;
   z-index: 100;
-  opacity: 0;
-  visibility: hidden;
-  transform: translateY(-10px);
-  transition: all 0.2s;
-}
-
-.userProfileContainer:hover .dropdownMenu {
   opacity: 1;
   visibility: visible;
   transform: translateY(0);
+  transition: all 0.2s;
 }
 
 .dropdownItem {

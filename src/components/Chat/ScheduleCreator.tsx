@@ -3,10 +3,7 @@ import { API_CONFIG, authenticatedApiRequest } from '../../config/api';
 import styles from './Chat.module.css';
 
 interface ScheduleData {
-  title: string;
-  content: string;
   rawText: string;
-  source: string;
 }
 
 interface Message {
@@ -22,9 +19,6 @@ interface ScheduleCreatorProps {
 
 const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) => {
   const [rawText, setRawText] = useState('');
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [source, setSource] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,7 +37,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
     setMessages([
       {
         id: '0',
-        text: '새로운 스케줄을 생성해보세요! 아래 필드들을 채우고 텍스트 영역에 상세 내용을 입력하면 됩니다.',
+        text: '새로운 스케줄을 생성해보세요! 텍스트 영역에 상세 내용을 입력하면 됩니다.',
         timestamp: new Date(),
         type: 'system'
       }
@@ -70,7 +64,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
     // 사용자 입력 메시지 추가
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: `스케줄 생성 요청: ${title || '제목 없음'}`,
+      text: `스케줄 생성 요청`,
       timestamp: new Date(),
       type: 'user'
     };
@@ -80,10 +74,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       console.log('📅 스케줄 생성 요청 시작');
       
       const scheduleData: ScheduleData = {
-        title: title.trim() || '',
-        content: content.trim() || '',
-        rawText: rawText.trim(),
-        source: source.trim() || 'manual'
+        rawText: rawText.trim()
       };
 
       console.log('📤 전송할 스케줄 데이터:', scheduleData);
@@ -112,9 +103,6 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
 
       // 폼 리셋
       setRawText('');
-      setTitle('');
-      setContent('');
-      setSource('');
       
       // textarea 높이 리셋
       if (textareaRef.current) {
@@ -191,69 +179,6 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
         )}
       </div>
 
-      {/* Form Fields */}
-      <div className={styles.formFields} style={{ padding: '1rem', borderBottom: '1px solid #e5e7eb' }}>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-          <div>
-            <label htmlFor="title" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-              제목 (Title)
-            </label>
-            <input
-              id="title"
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="스케줄 제목을 입력하세요"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-          <div>
-            <label htmlFor="source" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-              소스 (Source)
-            </label>
-            <input
-              id="source"
-              type="text"
-              value={source}
-              onChange={(e) => setSource(e.target.value)}
-              placeholder="출처 또는 분류"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                border: '1px solid #d1d5db',
-                borderRadius: '0.375rem',
-                fontSize: '0.875rem'
-              }}
-            />
-          </div>
-        </div>
-        <div>
-          <label htmlFor="content" style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'medium' }}>
-            내용 요약 (Content)
-          </label>
-          <input
-            id="content"
-            type="text"
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="스케줄 내용 요약"
-            style={{
-              width: '100%',
-              padding: '0.5rem',
-              border: '1px solid #d1d5db',
-              borderRadius: '0.375rem',
-              fontSize: '0.875rem'
-            }}
-          />
-        </div>
-      </div>
-
       {/* Input */}
       <form onSubmit={handleSubmit} className={styles.inputContainer}>
         <div className={styles.inputWrapper}>
@@ -263,7 +188,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
               value={rawText}
               onChange={handleTextareaChange}
               onKeyDown={handleKeyDown}
-              placeholder="상세 내용을 입력하세요... (필수)"
+              placeholder="스케줄 내용을 입력하세요... (필수)"
               rows={3}
               className={styles.textarea}
               style={{ minHeight: '60px' }}

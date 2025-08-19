@@ -3,10 +3,11 @@ export interface AuthTokens {
   accessToken: string;
   userName: string;
   email: string;
+  refreshToken?: string; // refreshToken 추가
 }
 
 export interface LoginResponse {
-  accessToken: string;
+  token: string; // accessToken -> token으로 변경
   userName: string;
   email: string;
   // refreshToken은 HttpOnly Cookie로 자동 설정됨
@@ -45,6 +46,17 @@ class TokenManager {
     }
   }
 
+  // 로그인 성공 시 토큰 저장
+  setTokens(tokens: AuthTokens): void {
+    this.tokens = tokens;
+    this.saveTokensToStorage(tokens);
+    console.log('✅ 토큰 저장 완료:', {
+      accessToken: tokens.accessToken.substring(0, 20) + '...',
+      userName: tokens.userName,
+      email: tokens.email
+    });
+  }
+
   // localStorage에 토큰 저장 (Access Token만)
   private saveTokensToStorage(tokens: AuthTokens): void {
     try {
@@ -53,6 +65,11 @@ class TokenManager {
         userName: tokens.userName,
         email: tokens.email
       }));
+      
+      // refreshToken도 저장 (토큰 갱신 시 사용)
+      if (tokens.refreshToken) {
+        localStorage.setItem('neekly_refresh_token', tokens.refreshToken);
+      }
     } catch (error) {
       console.error('❌ localStorage에 토큰 저장 실패:', error);
     }
@@ -63,20 +80,10 @@ class TokenManager {
     try {
       localStorage.removeItem(this.ACCESS_TOKEN_KEY);
       localStorage.removeItem(this.USER_INFO_KEY);
+      localStorage.removeItem('neekly_refresh_token');
     } catch (error) {
       console.error('❌ localStorage에서 토큰 제거 실패:', error);
     }
-  }
-
-  // 로그인 성공 시 토큰 저장
-  setTokens(tokens: AuthTokens): void {
-    this.tokens = tokens;
-    this.saveTokensToStorage(tokens);
-    console.log('✅ 토큰 저장 완료:', {
-      accessToken: tokens.accessToken.substring(0, 20) + '...',
-      userName: tokens.userName,
-      email: tokens.email
-    });
   }
 
   // 액세스 토큰 가져오기
@@ -100,9 +107,13 @@ class TokenManager {
 
   // 로그아웃 (토큰 제거)
   clearTokens(): void {
+    console.log('🗑️ TokenManager clearTokens 시작');
+    console.log('현재 토큰 상태:', this.tokens ? '토큰 존재' : '토큰 없음');
+    
     this.tokens = null;
     this.clearTokensFromStorage();
-    console.log('🚪 토큰 제거 완료 - 로그아웃');
+    
+    console.log('✅ 토큰 제거 완료 - 로그아웃');
   }
 
   // JWT 토큰 디코딩 (만료시간 확인용)
@@ -147,6 +158,8 @@ class TokenManager {
 export const tokenManager = new TokenManager();
 
 // auth/authAPI.ts
+import { API_CONFIG } from '../../config/api';
+
 export class AuthAPI {
   private baseURL: string;
 
@@ -176,7 +189,7 @@ export class AuthAPI {
       
       // Access Token만 저장 (Refresh Token은 HttpOnly Cookie에서 자동 처리)
       tokenManager.setTokens({
-        accessToken: data.accessToken,
+        accessToken: data.token, // data.accessToken -> data.token으로 변경
         userName: data.userName,
         email: data.email
       });
@@ -184,7 +197,7 @@ export class AuthAPI {
       console.log('🎉 로그인 성공:', {
         userName: data.userName,
         email: data.email,
-        hasAccessToken: !!data.accessToken
+        hasAccessToken: !!data.token
       });
 
       return data;
@@ -194,34 +207,54 @@ export class AuthAPI {
     }
   }
 
-  // 토큰 갱신 API (HttpOnly Cookie의 Refresh Token 자동 사용)
+  // 토큰 갱신 API - 서버 응답 구조에 맞게 수정
   async refreshToken(): Promise<LoginResponse> {
     try {
       console.log('🔄 토큰 갱신 요청');
 
-      const response = await fetch(`${this.baseURL}/api/auth/refresh`, {
+      // 현재 저장된 refreshToken 가져오기 (localStorage에서)
+      const refreshToken = localStorage.getItem('neekly_refresh_token');
+      
+      if (!refreshToken) {
+        throw new Error('Refresh token이 없습니다');
+      }
+
+      const response = await fetch(`${this.baseURL}/api/user/reissue`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        credentials: 'include', // HttpOnly Cookie의 Refresh Token 자동 포함
+        body: JSON.stringify({ refreshToken }),
       });
 
       if (!response.ok) {
         throw new Error(`토큰 갱신 실패: ${response.status}`);
       }
 
-      const data: LoginResponse = await response.json();
+      // 서버 응답이 문자열 형태의 새로운 access token
+      const newAccessToken = await response.text();
       
+      // 현재 사용자 정보 가져오기
+      const currentUser = tokenManager.getUserInfo();
+      if (!currentUser) {
+        throw new Error('사용자 정보를 찾을 수 없습니다');
+      }
+
       // 새로운 Access Token 저장
       tokenManager.setTokens({
-        accessToken: data.accessToken,
-        userName: data.userName,
-        email: data.email
+        accessToken: newAccessToken,
+        userName: currentUser.userName,
+        email: currentUser.email
       });
 
       console.log('✅ 토큰 갱신 성공');
-      return data;
+      
+      // LoginResponse 형태로 반환
+      return {
+        token: newAccessToken,
+        userName: currentUser.userName,
+        email: currentUser.email
+      };
     } catch (error) {
       console.error('💥 토큰 갱신 실패:', error);
       tokenManager.clearTokens(); // 갱신 실패 시 로그아웃
@@ -231,18 +264,28 @@ export class AuthAPI {
 
   // 로그아웃 API (서버에서 HttpOnly Cookie 제거)
   async logout(): Promise<void> {
+    console.log('🌐 AuthAPI logout 시작');
+    const logoutUrl = `${this.baseURL}${API_CONFIG.ENDPOINTS.LOGOUT}`;
+    console.log('로그아웃 URL:', logoutUrl);
+    
     try {
-      const response = await fetch(`${this.baseURL}/api/auth/logout`, {
+      console.log('📡 서버에 로그아웃 요청 전송 중...');
+      const response = await fetch(logoutUrl, {
         method: 'POST',
         credentials: 'include', // HttpOnly Cookie 포함하여 서버에서 제거
       });
 
+      console.log('📋 서버 응답 상태:', response.status, response.statusText);
+
       if (!response.ok) {
-        console.warn('로그아웃 API 응답 오류:', response.status);
+        console.warn('⚠️ 로그아웃 API 응답 오류:', response.status);
+      } else {
+        console.log('✅ 서버 로그아웃 성공');
       }
     } catch (error) {
-      console.error('로그아웃 API 오류 (무시):', error);
+      console.error('❌ 로그아웃 API 오류 (무시):', error);
     } finally {
+      console.log('🗑️ 로컬 토큰 제거 시작');
       tokenManager.clearTokens();
       console.log('🚪 로그아웃 완료');
     }
