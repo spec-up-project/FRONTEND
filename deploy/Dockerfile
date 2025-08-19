@@ -12,7 +12,7 @@ RUN apt update && \
     rm -rf /var/lib/{apt,dpkg,cache,log}
 
 # React 빌드 결과 복사
-COPY build /usr/share/nginx/html
+COPY dist /usr/share/nginx/html
 
 # 포트 오픈
 EXPOSE 5111
