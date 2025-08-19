@@ -1,0 +1,10 @@
+version: '3.8'
+services:
+  backend:
+    image: neekly-frontend:REACT_PROFILES_ACTIVE
+    container_name: react-app
+    ports:
+      - "5111:5111"
+    environment:
+      - TZ=Asia/Seoul
+    restart: unless-stopped
