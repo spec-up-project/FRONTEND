@@ -1,32 +1,10 @@
-// API 설정
-export const API_CONFIG = {
-  BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://192.168.45.219:8081',
-  ENDPOINTS: {
-    // 인증 관련 (토큰 불필요)
-    SIGNUP: '/api/user/register',
-    LOGIN: '/api/user/login',
-    LOGOUT: '/api/user/logout',
-    
-    // 인증 필요한 API들
-    CREATE_TASK: '/api/schedule/auto',
-    UPDATE_TASK: '/api/schedule',
-    UPDATE_SCHEDULE_MANUAL: '/api/schedule/manual/update',
-    UPDATE_SCHEDULE: '/api/schedule',
-    CREATE_SCHEDULE: '/api/schedule/auto',
-    DELETE_SCHEDULE: '/api/schedule',
-    DELETE_SCHEDULE_MANUAL: '/api/schedule/manual/delete', // 🔥 추가: 수동 삭제 엔드포인트
-    GET_SCHEDULES: '/api/schedule/manual/calendar',
-
-    GET_SCHEDULE_DETAIL: '/api/report/detail',
-    
-    // 리포트 관련 API들
-    WEEKLY_REPORTS: '/api/report',
-    CREATE_REPORT: '/api/reports/create',
-  },
-};
+// API 설정 import
+import { API_CONFIG } from './constants';
+export { API_CONFIG };
 
 // TokenManager import
-import { tokenManager, authService } from '../components/Auth/TokenManger';
+import { tokenManager } from '../components/Auth/TokenManger';
+import { authService } from '../services';
 
 // 디버깅을 위한 로깅 함수
 const logApiRequest = (url: string, options: RequestInit) => {

@@ -7,7 +7,7 @@ export interface AuthTokens {
 }
 
 export interface LoginResponse {
-  token: string; // accessToken -> token으로 변경
+  accessToken: string; // token -> accessToken으로 변경하여 AuthTokens와 일치
   userName: string;
   email: string;
   // refreshToken은 HttpOnly Cookie로 자동 설정됨
@@ -158,7 +158,7 @@ class TokenManager {
 export const tokenManager = new TokenManager();
 
 // auth/authAPI.ts
-import { API_CONFIG } from '../../config/api';
+import { API_CONFIG } from '../../config/constants';
 
 export class AuthAPI {
   private baseURL: string;
@@ -189,7 +189,7 @@ export class AuthAPI {
       
       // Access Token만 저장 (Refresh Token은 HttpOnly Cookie에서 자동 처리)
       tokenManager.setTokens({
-        accessToken: data.token, // data.accessToken -> data.token으로 변경
+        accessToken: data.accessToken,
         userName: data.userName,
         email: data.email
       });
@@ -197,7 +197,7 @@ export class AuthAPI {
       console.log('🎉 로그인 성공:', {
         userName: data.userName,
         email: data.email,
-        hasAccessToken: !!data.token
+        hasAccessToken: !!data.accessToken
       });
 
       return data;
@@ -251,7 +251,7 @@ export class AuthAPI {
       
       // LoginResponse 형태로 반환
       return {
-        token: newAccessToken,
+        accessToken: newAccessToken,
         userName: currentUser.userName,
         email: currentUser.email
       };
@@ -395,7 +395,5 @@ export class AuthenticatedAPIClient {
   }
 }
 
-// 사용 예시
-export const authService = new AuthService('http://192.168.45.219:8081');
-export const apiClient = new AuthenticatedAPIClient('http://192.168.45.219:8081', authService);
+// 서비스 인스턴스는 별도 파일에서 생성하여 순환 참조 방지
 

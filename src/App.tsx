@@ -3,7 +3,7 @@ import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
 import PlanPage from './pages/PlanPage';
 import TaskPage from './pages/TaskPage';
-import { authService } from './components/Auth/TokenManger';
+import { authService } from './services';
 import styles from './App.module.css';
 
 type AuthPage = 'login' | 'signup';
@@ -43,7 +43,7 @@ const App: React.FC = () => {
     checkAuthStatus();
   }, []);
 
-  const handleLogin = async (email: string, password: string) => {
+  const handleLogin = async (_email: string, _password: string) => {
     try {
       // authService를 통해 로그인 (토큰은 이미 Login 컴포넌트에서 저장됨)
       const currentUser = authService.getCurrentUser();
