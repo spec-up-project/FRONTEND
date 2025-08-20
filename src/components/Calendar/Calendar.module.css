@@ -2,7 +2,8 @@
   flex: 1;
   background-color: rgb(249 250 251);
   padding: 1.5rem 2rem;
-  overflow-y: auto;
+  height: 100%;
+  box-sizing: border-box;
 }
 
 .wrapper {
@@ -32,7 +33,12 @@
   border-radius: 1rem;
   box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   border: 1px solid rgb(229 231 235);
-  overflow: hidden;
+  overflow: visible;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
 .navigation {
@@ -136,6 +142,12 @@
 
 .calendarContent {
   padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: visible;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
 .weekdays {
@@ -157,11 +169,14 @@
 .daysGrid {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
+  grid-template-rows: repeat(6, 1fr);
   gap: 0.25rem;
+  flex: 1;
+  min-height: 0;
 }
 
 .dayCell {
-  min-height: 100px;
+  min-height: 0;
   padding: 0.5rem;
   border-radius: 0.5rem;
   cursor: pointer;

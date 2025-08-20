@@ -2,7 +2,7 @@ export interface WeeklyReport {
   id: string;
   title: string;
   date: string;
-  status: 'draft' | 'completed';
+  status: 'REQUEST' | 'COMPLETE' | 'ERROR';
   type: 'record' | 'summary';
 }
 

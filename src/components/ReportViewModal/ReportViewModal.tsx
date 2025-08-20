@@ -72,26 +72,14 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({
     }
   }, [isOpen, report]);
 
-  const formatDateTime = (dateTimeString: string) => {
-    const date = new Date(dateTimeString);
-    return date.toLocaleString('ko-KR', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
+  
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString('ko-KR');
   };
 
-  const handleExportExcel = () => {
-    // 엑셀 내보내기 로직 (실제 구현 시 xlsx 라이브러리 사용)
-    alert('엑셀 파일이 다운로드됩니다.');
-  };
+  
 
   if (!isOpen || !report) return null;
 
@@ -155,20 +143,7 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({
                       </div>
                     </div>
                     
-                    <div className={styles.scheduleInfo}>
-                      <div className={styles.timeInfo}>
-                        <span className={styles.timeLabel}>시작:</span>
-                        <span className={styles.timeValue}>
-                          {schedule.startTime ? formatDateTime(schedule.startTime) : '시간 정보 없음'}
-                        </span>
-                      </div>
-                      <div className={styles.timeInfo}>
-                        <span className={styles.timeLabel}>종료:</span>
-                        <span className={styles.timeValue}>
-                          {schedule.endTime ? formatDateTime(schedule.endTime) : '시간 정보 없음'}
-                        </span>
-                      </div>
-                    </div>
+
 
                     {schedule.content && (
                       <div className={styles.contentSection}>
@@ -225,12 +200,6 @@ const ReportViewModal: React.FC<ReportViewModalProps> = ({
         </div>
 
         <div className={styles.modalActions}>
-          <button className={styles.exportButton} onClick={handleExportExcel}>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            엑셀 다운로드
-          </button>
           <button className={styles.closeButton} onClick={onClose}>
             닫기
           </button>

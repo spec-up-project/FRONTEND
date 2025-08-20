@@ -9,7 +9,7 @@ const TaskHeader: React.FC<TaskHeaderProps> = ({ onCreateRecordReport }) => {
   return (
     <div className={styles.header}>
       <div>
-        <h1 className={styles.title}>Task Management</h1>
+        <h1 className={styles.title}>Weekly Report</h1>
         <p className={styles.subtitle}>주간리포트 생성 및 관리</p>
       </div>
       {onCreateRecordReport && (

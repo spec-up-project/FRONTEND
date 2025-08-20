@@ -18,11 +18,15 @@ const ReportList: React.FC<ReportListProps> = ({
   header
 }) => {
   const getStatusColor = (status: string) => {
-    return status === 'completed' ? '#10b981' : '#f59e0b';
+    if (status === 'COMPLETE') return '#10b981'; // green
+    if (status === 'ERROR') return '#ef4444'; // red
+    return '#f59e0b'; // REQUEST -> yellow
   };
 
   const getStatusText = (status: string) => {
-    return status === 'completed' ? '완료' : '작성중';
+    if (status === 'COMPLETE') return '완료';
+    if (status === 'ERROR') return '오류';
+    return '요청중';
   };
 
   const getTypeText = (type: string) => {
@@ -117,6 +121,8 @@ const ReportList: React.FC<ReportListProps> = ({
               <button 
                 className={styles.actionButton}
                 onClick={() => onViewReport(report)}
+                disabled={report.status === 'REQUEST'}
+                title={report.status === 'REQUEST' ? '요청중 상태에서는 상세보기 불가' : undefined}
               >
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -124,18 +130,7 @@ const ReportList: React.FC<ReportListProps> = ({
                 </svg>
                 보기
               </button>
-              <button className={styles.actionButton}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                </svg>
-                편집
-              </button>
-              <button className={styles.actionButton}>
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                삭제
-              </button>
+              {/* 편집/삭제 기능 제거 */}
             </div>
           </div>
         ))}

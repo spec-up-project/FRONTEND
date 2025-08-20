@@ -62,7 +62,7 @@ const Header: React.FC<HeaderProps> = ({
       <div className={styles.container}>
         {/* Logo */}
         <div className={styles.logo}>
-          <h1 className={styles.logoText}>Neekly Reports</h1>
+          <h1 className={styles.logoText}>Neekly Report</h1>
         </div>
 
         {/* Navigation */}
@@ -77,7 +77,7 @@ const Header: React.FC<HeaderProps> = ({
             onClick={onTaskClick}
             className={`${styles.navLink} ${currentPage === 'task' ? styles.active : styles.inactive}`}
           >
-            주간리포트
+            Weekly Report
           </button>
         </nav>
 

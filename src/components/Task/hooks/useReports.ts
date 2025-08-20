@@ -23,11 +23,20 @@ export const useReports = () => {
       console.log('✅ 리포트 데이터 가져오기 성공:', result);
       
       // 서버 응답 데이터를 WeeklyReport 타입으로 변환
+      const normalizeStatus = (rawStatus: any): 'REQUEST' | 'COMPLETE' | 'ERROR' => {
+        const status = String(rawStatus || '').toUpperCase();
+        if (status === 'REQUEST' || status === 'REQUESTING' || status === 'PENDING' || status === 'IN_PROGRESS') return 'REQUEST';
+        if (status === 'COMPLETE' || status === 'COMPLETED' || status === 'DONE' || status === 'SUCCESS') return 'COMPLETE';
+        if (status === 'ERROR' || status === 'FAILED' || status === 'FAIL') return 'ERROR';
+        // 기본값: 완료로 처리
+        return 'COMPLETE';
+      };
+
       const mappedReports = (result || []).map((item: any) => ({
         id: item.reportUid || item.id || Date.now().toString(),
         title: item.title || '제목 없음',
         date: item.createdAt || item.date || new Date().toISOString().split('T')[0],
-        status: item.status || 'completed', // 기본값을 completed로 설정
+        status: normalizeStatus(item.status),
         type: item.type || 'summary' // 기본값을 summary로 설정
       }));
       
@@ -72,7 +81,7 @@ export const useReports = () => {
         id: result.id || Date.now().toString(),
         title: result.title || `${startDate} ~ ${endDate} ${type === 'record' ? '주간기록리포트' : '주간리포트'}`,
         date: startDate,
-        status: 'draft',
+        status: 'COMPLETE',
         type: type
       };
       

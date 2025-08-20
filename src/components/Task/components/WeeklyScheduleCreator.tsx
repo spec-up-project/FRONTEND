@@ -103,7 +103,7 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       // 성공 메시지 추가
       const successMessage: Message = {
         id: (Date.now() + 1).toString(),
-        text: '✨ 주간일정이 성공적으로 생성되었습니다!',
+        text: '✨ 주간일정이 성공적으로 요청되었습니다! 5분 내로 생성되오니 조금만 기다려주세요!',
         timestamp: new Date(),
         type: 'success'
       };

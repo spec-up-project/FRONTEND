@@ -378,10 +378,7 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
                 Today
               </button>
               <div className={styles.viewToggle}>
-                <button className={styles.viewButton}>Day</button>
-                <button className={styles.viewButton}>Week</button>
                 <button className={`${styles.viewButton} ${styles.active}`}>Month</button>
-                <button className={styles.viewButton}>Year</button>
               </div>
             </div>
           </div>
