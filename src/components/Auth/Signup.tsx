@@ -109,7 +109,7 @@ const Signup: React.FC<SignupProps> = ({ onSignup, onBackToLogin }) => {
     
     try {
       // API 호출
-      const result = await signupAPI(email, password, userName);
+      await signupAPI(email, password, userName);
       
       console.log('✅ 회원가입 성공');
       

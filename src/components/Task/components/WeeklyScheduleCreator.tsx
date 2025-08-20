@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { API_CONFIG, authenticatedApiRequest } from '../../../config/api';
+import { authenticatedApiRequest } from '../../../config/api';
 import styles from './WeeklyScheduleCreator.module.css';
 
 interface ScheduleData {
@@ -20,8 +20,6 @@ interface WeeklyScheduleCreatorProps {
 const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onScheduleCreated }) => {
   const [rawText, setRawText] = useState('');
   const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [source, setSource] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -119,8 +117,6 @@ const WeeklyScheduleCreator: React.FC<WeeklyScheduleCreatorProps> = ({ onSchedul
       // 폼 리셋
       setRawText('');
       setTitle('');
-      setContent('');
-      setSource('');
       
       // textarea 높이 리셋
       if (textareaRef.current) {

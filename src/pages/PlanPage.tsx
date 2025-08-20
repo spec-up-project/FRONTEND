@@ -1,7 +1,6 @@
 import React from 'react';
 import Header from '../components/Header/Header';
 import Calendar from '../components/Calendar/Calendar';
-import type { CalendarRef } from '../components/Calendar/Calendar';
 import ScheduleCreator from '../components/Chat/ScheduleCreator';
 import styles from '../App.module.css';
 
