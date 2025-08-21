@@ -178,7 +178,7 @@
 
 .dayCell {
   min-height: 0;
-  padding: 0.5rem;
+ 
   border-radius: 0.5rem;
   cursor: pointer;
   transition: all 0.2s;
@@ -205,7 +205,7 @@
 }
 
 .dayNumber {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   margin-bottom: 0.25rem;
   display: flex;
@@ -261,7 +261,7 @@
 }
 
 .event {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   padding: 0.125rem 0.5rem;
   border-radius: 9999px;
   color: white;

@@ -66,9 +66,24 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
   const hasTimezone = (value: string): boolean => /Z|[+-]\d{2}:?\d{2}$/.test(value);
   const parseServerDate = (value?: string): Date => {
     if (!value) return new Date('');
-    // If no timezone is present, treat it as UTC and append 'Z'
-    const normalized = hasTimezone(value) ? value : `${value}Z`;
-    return new Date(normalized);
+    if (hasTimezone(value)) {
+      return new Date(value);
+    }
+    // No timezone provided: interpret as LOCAL time explicitly to avoid unintended UTC shifts
+    // Expected formats: YYYY-MM-DDTHH:mm[:ss] or YYYY-MM-DD HH:mm[:ss]
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (match) {
+      const [, y, m, d, hh, mm, ss] = match;
+      const year = parseInt(y, 10);
+      const monthIndex = parseInt(m, 10) - 1;
+      const day = parseInt(d, 10);
+      const hour = parseInt(hh, 10);
+      const minute = parseInt(mm, 10);
+      const second = ss ? parseInt(ss, 10) : 0;
+      return new Date(year, monthIndex, day, hour, minute, second);
+    }
+    // Fallback to native parsing
+    return new Date(value);
   };
   const toHHMM = (value?: string): string => {
     if (!value) return '';
