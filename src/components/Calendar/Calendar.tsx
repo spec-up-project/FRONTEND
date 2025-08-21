@@ -88,7 +88,7 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
       const [hh, mm] = value.split(':');
       return `${padTwo(parseInt(hh, 10))}:${mm}`;
     }
-    const date = hasTimezone(value) ? new Date(value) : new Date(`${value}Z`);
+    const date = parseServerDate(value);
     if (isNaN(date.getTime())) return '';
     const formatted = new Intl.DateTimeFormat('en-GB', {
       hour: '2-digit',

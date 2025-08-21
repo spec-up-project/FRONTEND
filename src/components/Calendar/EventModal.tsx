@@ -39,44 +39,62 @@ interface TimeSlot {
   }>;
 }
 
-// 시간 유틸리티: "HH:MM" 또는 ISO 문자열을 안전하게 처리
+// 시간 유틸리티: KST 기준 처리 및 표시
 const padTwo = (value: number): string => String(value).padStart(2, '0');
-
-const isHHMM = (value: string): boolean => {
-  return /^\d{1,2}:\d{2}$/.test(value);
-};
-
-const toHHMM = (value?: string | null): string => {
-  if (!value) return '';
-  if (isHHMM(value)) {
-    const [hourStr, minuteStr] = value.split(':');
-    const hour = parseInt(hourStr, 10);
-    if (Number.isNaN(hour)) return '';
-    return `${padTwo(hour)}:${minuteStr}`;
+const isHHMM = (value: string): boolean => /^\d{1,2}:\d{2}$/.test(value);
+const KST_TIMEZONE = 'Asia/Seoul';
+const hasTimezone = (value: string): boolean => /Z|[+-]\d{2}:?\d{2}$/.test(value);
+const parseServerDate = (value?: string | null): Date => {
+  if (!value) return new Date('');
+  if (typeof value === 'string' && isHHMM(value)) {
+    const [hh, mm] = value.split(':');
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), now.getDate(), parseInt(hh, 10), parseInt(mm, 10), 0);
   }
-  const parsed = new Date(value);
-  if (!Number.isNaN(parsed.getTime())) {
-    return `${padTwo(parsed.getHours())}:${padTwo(parsed.getMinutes())}`;
+  if (typeof value === 'string' && hasTimezone(value)) {
+    return new Date(value);
   }
-  return '';
-};
-
-// Local date to YYYY-MM-DD (no UTC conversion)
-const toLocalYYYYMMDD = (date: Date): string => {
-  return `${date.getFullYear()}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}`;
-};
-
-const extractDateString = (evt?: { date?: string; createDate?: string; startTime?: string | null } | null): string => {
-  if (!evt) return toLocalYYYYMMDD(new Date());
-  if (evt.date) return evt.date;
-  if (evt.createDate) return toLocalYYYYMMDD(new Date(evt.createDate));
-  if (evt.startTime) {
-    const parsed = new Date(evt.startTime);
-    if (!Number.isNaN(parsed.getTime())) {
-      return toLocalYYYYMMDD(parsed);
+  if (typeof value === 'string') {
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+    if (match) {
+      const [, y, m, d, hh, mm, ss] = match;
+      const utcMs = Date.UTC(
+        parseInt(y, 10),
+        parseInt(m, 10) - 1,
+        parseInt(d, 10),
+        parseInt(hh, 10),
+        parseInt(mm, 10),
+        ss ? parseInt(ss, 10) : 0
+      );
+      const kstAdjustedMs = utcMs - (9 * 60 * 60 * 1000);
+      return new Date(kstAdjustedMs);
     }
   }
-  return toLocalYYYYMMDD(new Date());
+  return new Date(value as string);
+};
+const toHHMMKST = (value?: string | null): string => {
+  if (!value) return '';
+  if (typeof value === 'string' && isHHMM(value)) return value.length === 4 ? `0${value}` : value;
+  const date = parseServerDate(value);
+  if (Number.isNaN(date.getTime())) return '';
+  return new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: KST_TIMEZONE }).format(date);
+};
+const toKSTYYYYMMDD = (value?: string | Date | null): string => {
+  const date = value instanceof Date ? value : parseServerDate(value as string | undefined);
+  if (Number.isNaN(date.getTime())) {
+    const now = new Date();
+    return `${now.getFullYear()}-${padTwo(now.getMonth() + 1)}-${padTwo(now.getDate())}`;
+  }
+  return new Intl.DateTimeFormat('en-CA', { timeZone: KST_TIMEZONE, year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+};
+
+// YYYY-MM-DD string in KST
+const extractDateString = (evt?: { date?: string; createDate?: string; startTime?: string | null } | null): string => {
+  if (!evt) return toKSTYYYYMMDD(new Date());
+  if (evt.date) return evt.date;
+  if (evt.createDate) return toKSTYYYYMMDD(evt.createDate);
+  if (evt.startTime) return toKSTYYYYMMDD(evt.startTime);
+  return toKSTYYYYMMDD(new Date());
 };
 
 // (removed) No longer needed since server expects UTC ISO (Z)
@@ -186,7 +204,7 @@ const EventModal: React.FC<EventModalProps> = ({
       // 해당 시간대의 이벤트 필터링 (선택 날짜 범위 내)
       const hourEvents = eventsForSelectedDate.filter((evt) => {
         if (!evt.startTime) return false;
-        const hhmm = toHHMM(evt.startTime);
+        const hhmm = toHHMMKST(evt.startTime);
         if (!hhmm) return false;
         const eventStartHour = parseInt(hhmm.split(':')[0], 10);
         return eventStartHour === hour;
@@ -216,17 +234,17 @@ const EventModal: React.FC<EventModalProps> = ({
       // 날짜 처리 - date > createDate > startTime(ISO) 순으로 사용
       setDate(extractDateString(event));
       
-      // 시간 처리 - startTime에서 추출
-      const parsedStart = toHHMM(event.startTime);
+      // 시간 처리 - startTime에서 추출 (KST)
+      const parsedStart = toHHMMKST(event.startTime);
       setStartTime(parsedStart || '09:00');
       
       // 종료 시간 처리
-      const parsedEnd = toHHMM(event.endTime);
+      const parsedEnd = toHHMMKST(event.endTime);
       setEndTime(parsedEnd || '10:00');
       
     } else {
       // 새 이벤트 생성 시 기본값
-      setDate(toLocalYYYYMMDD(new Date()));
+      setDate(toKSTYYYYMMDD(new Date()));
       setStartTime('09:00');
       setEndTime('10:00');
       setTitle('');
@@ -289,8 +307,8 @@ const EventModal: React.FC<EventModalProps> = ({
     setDate(extractDateString(personalEvent));
     
     // 시간 처리 - null이면 기본값
-    const start = toHHMM(personalEvent.startTime);
-    const end = toHHMM(personalEvent.endTime);
+    const start = toHHMMKST(personalEvent.startTime);
+    const end = toHHMMKST(personalEvent.endTime);
     setStartTime(start || '09:00');
     setEndTime(end || '10:00');
   };
@@ -417,11 +435,12 @@ const EventModal: React.FC<EventModalProps> = ({
             <div className={styles.timelineHeader}>
               <div className={styles.timelineTitle}>일정 타임라인</div>
               <div className={styles.timelineDate}>
-                {date && new Date(date).toLocaleDateString('ko-KR', {
+                {date && new Intl.DateTimeFormat('ko-KR', {
+                  timeZone: 'Asia/Seoul',
                   year: 'numeric',
                   month: 'long',
                   day: 'numeric'
-                })}
+                }).format(new Date(date))}
               </div>
             </div>
 
