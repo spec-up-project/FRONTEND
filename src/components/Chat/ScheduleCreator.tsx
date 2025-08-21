@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { API_CONFIG, authenticatedApiRequest } from '../../config/api';
 import styles from './Chat.module.css';
 
@@ -23,6 +23,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const isSubmittingRef = useRef(false); // 중복 실행 방지
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -44,13 +45,18 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
     ]);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // useCallback으로 메모이제이션하여 불필요한 재생성 방지
+  const handleSubmit = useCallback(async () => {
+    // 중복 실행 방지
+    if (isSubmittingRef.current || isLoading) {
+      console.log('🚫 이미 실행 중이거나 로딩 중입니다.');
+      return;
+    }
+
     // 필수 필드 검증
     if (!rawText.trim()) {
       const errorMessage: Message = {
-        id: Date.now().toString(),
+        id: `error-${Date.now()}`, // 더 고유한 ID 생성
         text: '텍스트 내용을 입력해주세요!',
         timestamp: new Date(),
         type: 'system'
@@ -59,11 +65,15 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       return;
     }
 
+    isSubmittingRef.current = true;
     setIsLoading(true);
 
+    // 고유한 타임스탬프로 메시지 ID 생성
+    const timestamp = Date.now();
+    
     // 사용자 입력 메시지 추가
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: `user-${timestamp}`,
       text: `스케줄 생성 요청`,
       timestamp: new Date(),
       type: 'user'
@@ -79,8 +89,8 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
 
       console.log('📤 전송할 스케줄 데이터:', scheduleData);
       
-      // API 요청 - API_CONFIG의 CREATE_TASK 엔드포인트 사용
-      const result = await authenticatedApiRequest(API_CONFIG.ENDPOINTS.CREATE_TASK, {
+      // API 요청 - 단일 CREATE_SCHEDULE 엔드포인트 사용
+      const result = await authenticatedApiRequest(API_CONFIG.ENDPOINTS.CREATE_SCHEDULE, {
         method: 'POST',
         body: JSON.stringify(scheduleData),
       });
@@ -89,7 +99,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       
       // 성공 메시지 추가
       const successMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `success-${timestamp}`,
         text: '✨ 스케줄이 성공적으로 생성되었습니다!',
         timestamp: new Date(),
         type: 'success'
@@ -114,7 +124,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       
       // 에러 메시지 추가
       const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
+        id: `error-${timestamp}`,
         text: `❌ 스케줄 생성에 실패했습니다: ${error.message || '알 수 없는 오류'}`,
         timestamp: new Date(),
         type: 'system'
@@ -122,17 +132,18 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
+      isSubmittingRef.current = false; // 실행 완료 후 플래그 해제
     }
-  };
+  }, [rawText, isLoading, onScheduleCreated]); // 의존성 배열 명시
 
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      handleSubmit(e);
+      handleSubmit();
     }
-  };
+  }, [handleSubmit]);
 
-  const handleTextareaChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+  const handleTextareaChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setRawText(e.target.value);
     
     // Auto-resize textarea
@@ -140,7 +151,13 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
-  };
+  }, []);
+
+  // form submit 핸들러를 별도로 분리
+  const handleFormSubmit = useCallback((e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    handleSubmit();
+  }, [handleSubmit]);
 
   return (
     <div className={styles.container}>
@@ -151,7 +168,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
             <h2>스케줄 생성</h2>
             <p>새로운 스케줄을 만들어보세요</p>
           </div>
-          <button className={styles.headerButton}>
+          <button type="button" className={styles.headerButton}>
             <svg className={styles.headerIcon} fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
@@ -180,7 +197,7 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className={styles.inputContainer}>
+      <form onSubmit={handleFormSubmit} className={styles.inputContainer}>
         <div className={styles.inputWrapper}>
           <div className={styles.inputBox}>
             <textarea
@@ -192,20 +209,10 @@ const ScheduleCreator: React.FC<ScheduleCreatorProps> = ({ onScheduleCreated }) 
               rows={3}
               className={styles.textarea}
               style={{ minHeight: '60px' }}
+              disabled={isLoading} // 로딩 중 입력 비활성화
             />
             <div className={styles.inputFooter}>
-              <div className={styles.inputActions}>
-                <button
-                  type="button"
-                  className={styles.actionIcon}
-                  title="첨부파일 추가"
-                >
-                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                </button>
-                
-              </div>
+
               <button
                 type="submit"
                 disabled={!rawText.trim() || isLoading}

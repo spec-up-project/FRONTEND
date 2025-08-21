@@ -19,7 +19,7 @@ interface EventModalProps {
     isAllDay?: boolean;
     hasTeamsMeeting?: boolean;
     hasReminder?: boolean;
-    scheduleUid?: string;      // 🔥 tscheduleUid를 scheduleUid로 변경
+    scheduleUid?: string;
     source?: string;           // 실제 데이터에 있는 필드
     categoryUid?: string;      // 카테고리 UID
   } | null;
@@ -39,6 +39,48 @@ interface TimeSlot {
   }>;
 }
 
+// 시간 유틸리티: "HH:MM" 또는 ISO 문자열을 안전하게 처리
+const padTwo = (value: number): string => String(value).padStart(2, '0');
+
+const isHHMM = (value: string): boolean => {
+  return /^\d{1,2}:\d{2}$/.test(value);
+};
+
+const toHHMM = (value?: string | null): string => {
+  if (!value) return '';
+  if (isHHMM(value)) {
+    const [hourStr, minuteStr] = value.split(':');
+    const hour = parseInt(hourStr, 10);
+    if (Number.isNaN(hour)) return '';
+    return `${padTwo(hour)}:${minuteStr}`;
+  }
+  const parsed = new Date(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return `${padTwo(parsed.getHours())}:${padTwo(parsed.getMinutes())}`;
+  }
+  return '';
+};
+
+// Local date to YYYY-MM-DD (no UTC conversion)
+const toLocalYYYYMMDD = (date: Date): string => {
+  return `${date.getFullYear()}-${padTwo(date.getMonth() + 1)}-${padTwo(date.getDate())}`;
+};
+
+const extractDateString = (evt?: { date?: string; createDate?: string; startTime?: string | null } | null): string => {
+  if (!evt) return toLocalYYYYMMDD(new Date());
+  if (evt.date) return evt.date;
+  if (evt.createDate) return toLocalYYYYMMDD(new Date(evt.createDate));
+  if (evt.startTime) {
+    const parsed = new Date(evt.startTime);
+    if (!Number.isNaN(parsed.getTime())) {
+      return toLocalYYYYMMDD(parsed);
+    }
+  }
+  return toLocalYYYYMMDD(new Date());
+};
+
+// (removed) No longer needed since server expects UTC ISO (Z)
+
 const EventModal: React.FC<EventModalProps> = ({
   isOpen,
   onClose,
@@ -54,25 +96,106 @@ const EventModal: React.FC<EventModalProps> = ({
   const [endTime, setEndTime] = useState('');
   const [selectedPersonalEvent, setSelectedPersonalEvent] = useState<any>(null);
 
-  // 타임라인 시간대 생성 (오전 7시 ~ 오후 10시)
+  // UI에서 현재 편집 기준 이벤트 (타임라인 선택 > 모달 event 순)
+  const baseEventForUi = selectedPersonalEvent || event;
+
+  const handleSave = async () => {
+    try {
+      // selectedPersonalEvent가 있으면 그걸 기준으로, 없으면 기존 event 기준으로
+      const baseEvent = selectedPersonalEvent || event;
+      
+      // 새 이벤트인지 기존 이벤트 수정인지 판단
+      const isNewEvent = !baseEvent || (!baseEvent.scheduleUid && !baseEvent.id);
+      
+      // 날짜와 시간 구성 (UTC ISO로 전송)
+      const startDateTime = new Date(`${date}T${startTime}:00`);
+      const endDateTime = new Date(`${date}T${endTime}:00`);
+      
+      const basePayload = {
+        title: title,
+        content: content,
+        startTime: startDateTime.toISOString(),
+        endTime: endDateTime.toISOString(),
+        rawText: content,
+      } as const;
+
+      const optionalPayload: Record<string, unknown> = {};
+      if (baseEvent?.scheduleUid || baseEvent?.id) {
+        optionalPayload.scheduleUid = baseEvent.scheduleUid || baseEvent.id;
+      }
+      if (typeof baseEvent?.source === 'string' && baseEvent.source) {
+        optionalPayload.source = baseEvent.source;
+      }
+      if (typeof baseEvent?.isAllDay === 'boolean') {
+        optionalPayload.isAllDay = baseEvent.isAllDay;
+      }
+      if (baseEvent?.categoryUid) {
+        optionalPayload.categoryUid = baseEvent.categoryUid;
+      }
+
+      const requestData = {
+        ...basePayload,
+        ...optionalPayload,
+      } as const;
+      
+      console.log(`${isNewEvent ? 'Creating' : 'Updating'} event with API:`, requestData); // 디버깅용
+      
+      // API 엔드포인트 선택 (새 이벤트 vs 기존 이벤트 수정)
+      const apiEndpoint = isNewEvent 
+        ? API_CONFIG.ENDPOINTS.INSERT_SCHEDULE_MANUAL 
+        : API_CONFIG.ENDPOINTS.UPDATE_SCHEDULE_MANUAL;
+      
+      // API 호출
+      const response = await apiRequest(apiEndpoint, {
+        method: 'POST',
+        body: JSON.stringify(requestData)
+      });
+      
+      console.log('API response:', response); // 디버깅용
+      
+      // 성공 시 콜백 호출
+      onSave(requestData);
+      setSelectedPersonalEvent(null);
+      onClose();
+      
+    } catch (error) {
+      console.error('Failed to save event:', error);
+      alert('일정 저장에 실패했습니다. 다시 시도해주세요.');
+    }
+  };
+  // 타임라인 시간대 생성 (오전 7시 ~ 오후 10시) - 현재 UID + 선택 날짜의 이벤트만 표시
   const generateTimeSlots = (): TimeSlot[] => {
     const slots: TimeSlot[] = [];
+    const selectedDateString = date || extractDateString(event);
+    const currentTimelineUid = (selectedPersonalEvent?.scheduleUid 
+      || selectedPersonalEvent?.id 
+      || event?.scheduleUid 
+      || event?.id) as string | undefined;
+
+    const eventsMatchingUid = currentTimelineUid
+      ? (allEvents || []).filter((evt) => (evt?.scheduleUid || evt?.id) === currentTimelineUid)
+      : (allEvents || []);
+
+    const eventsForSelectedDate = eventsMatchingUid.filter((evt) => extractDateString(evt) === selectedDateString);
+
     for (let hour = 7; hour <= 22; hour++) {
       const isAM = hour < 12;
       const displayHour = hour === 12 ? 12 : hour > 12 ? hour - 12 : hour;
       const label = `${isAM ? '오전' : '오후'} ${displayHour}`;
-      
-      // 해당 시간대의 이벤트 필터링
-      const hourEvents = allEvents.filter(evt => {
+
+      // 해당 시간대의 이벤트 필터링 (선택 날짜 범위 내)
+      const hourEvents = eventsForSelectedDate.filter((evt) => {
         if (!evt.startTime) return false;
-        const eventStartHour = parseInt(evt.startTime.split(':')[0]);
+        const hhmm = toHHMM(evt.startTime);
+        if (!hhmm) return false;
+        const eventStartHour = parseInt(hhmm.split(':')[0], 10);
         return eventStartHour === hour;
       });
-      
+
       slots.push({
         hour,
         label,
-        events: hourEvents
+        events: hourEvents,
       });
     }
     return slots;
@@ -90,57 +213,20 @@ const EventModal: React.FC<EventModalProps> = ({
       setContent(event.content || event.rawText || '');
       console.log(event.content)
       
-      // 날짜 처리 - createDate를 우선 사용, 없으면 startTime에서 추출
-      if (event.createDate) {
-        // createDate에서 날짜 추출 (YYYY-MM-DD)
-        const dateStr = new Date(event.createDate).toISOString().split('T')[0];
-        setDate(dateStr);
-      } else if (event.startTime) {
-        // fallback: startTime에서 날짜 추출
-        const startDateTime = new Date(event.startTime);
-        if (!isNaN(startDateTime.getTime())) {
-          const dateStr = startDateTime.toISOString().split('T')[0];
-          setDate(dateStr);
-        } else {
-          const today = new Date().toISOString().split('T')[0];
-          setDate(today);
-        }
-      } else {
-        const today = new Date().toISOString().split('T')[0];
-        setDate(today);
-      }
+      // 날짜 처리 - date > createDate > startTime(ISO) 순으로 사용
+      setDate(extractDateString(event));
       
       // 시간 처리 - startTime에서 추출
-      if (event.startTime) {
-        const startDateTime = new Date(event.startTime);
-        if (!isNaN(startDateTime.getTime())) {
-          // 시간 추출 (HH:MM)
-          const timeStr = `${String(startDateTime.getHours()).padStart(2, '0')}:${String(startDateTime.getMinutes()).padStart(2, '0')}`;
-          setStartTime(timeStr);
-        } else {
-          setStartTime('09:00');
-        }
-      } else {
-        setStartTime('09:00');
-      }
+      const parsedStart = toHHMM(event.startTime);
+      setStartTime(parsedStart || '09:00');
       
       // 종료 시간 처리
-      if (event.endTime) {
-        const endDateTime = new Date(event.endTime);
-        if (!isNaN(endDateTime.getTime())) {
-          const timeStr = `${String(endDateTime.getHours()).padStart(2, '0')}:${String(endDateTime.getMinutes()).padStart(2, '0')}`;
-          setEndTime(timeStr);
-        } else {
-          setEndTime('10:00');
-        }
-      } else {
-        setEndTime('10:00');
-      }
+      const parsedEnd = toHHMM(event.endTime);
+      setEndTime(parsedEnd || '10:00');
       
     } else {
       // 새 이벤트 생성 시 기본값
-      const today = new Date().toISOString().split('T')[0];
-      setDate(today);
+      setDate(toLocalYYYYMMDD(new Date()));
       setStartTime('09:00');
       setEndTime('10:00');
       setTitle('');
@@ -148,47 +234,7 @@ const EventModal: React.FC<EventModalProps> = ({
     }
   }, [event]);
 
-  const handleSave = async () => {
-    try {
-      // selectedPersonalEvent가 있으면 그걸 기준으로, 없으면 기존 event 기준으로
-      const baseEvent = selectedPersonalEvent || event;
-      
-      // 날짜와 시간을 ISO 형식으로 변환
-      const startDateTime = new Date(`${date}T${startTime}:00`);
-      const endDateTime = new Date(`${date}T${endTime}:00`);
-      
-              const requestData = {
-          scheduleUid: baseEvent?.scheduleUid || baseEvent?.id || `event-${Date.now()}`,
-          title: title,
-          content: content, // content 필드 사용
-          startTime: startDateTime.toISOString(),
-          endTime: endDateTime.toISOString(),
-          rawText: content, // rawText도 content와 동일하게 설정
-          source: baseEvent?.source || "text",
-          isAllDay: baseEvent?.isAllDay || false, // 기존 값 사용하거나 기본값
-          categoryUid: baseEvent?.categoryUid || "" // 카테고리 UID가 있으면 사용, 없으면 빈 문자열
-        };
-      
-      console.log('Saving event with API:', requestData); // 디버깅용
-      
-      // API 호출
-      const response = await apiRequest(API_CONFIG.ENDPOINTS.UPDATE_SCHEDULE_MANUAL, {
-        method: 'POST',
-        body: JSON.stringify(requestData)
-      });
-      
-      console.log('API response:', response); // 디버깅용
-      
-      // 성공 시 콜백 호출
-      onSave(requestData);
-      setSelectedPersonalEvent(null);
-      onClose();
-      
-    } catch (error) {
-      console.error('Failed to save event:', error);
-      alert('일정 저장에 실패했습니다. 다시 시도해주세요.');
-    }
-  };
+  
 
   // 삭제 핸들러 수정
   const handleDelete = async () => {
@@ -239,17 +285,14 @@ const EventModal: React.FC<EventModalProps> = ({
     setTitle(personalEvent.title || '');
     setContent(personalEvent.content || personalEvent.rawText || '');
     
-    // 날짜 처리 - createDate에서 변환
-    if (personalEvent.createDate) {
-      const dateStr = new Date(personalEvent.createDate).toISOString().split('T')[0];
-      setDate(dateStr);
-    } else if (personalEvent.date) {
-      setDate(personalEvent.date);
-    }
+    // 날짜 처리 - 공통 추출기 사용 (date > createDate > startTime)
+    setDate(extractDateString(personalEvent));
     
     // 시간 처리 - null이면 기본값
-    setStartTime(personalEvent.startTime || '09:00');
-    setEndTime(personalEvent.endTime || '10:00');
+    const start = toHHMM(personalEvent.startTime);
+    const end = toHHMM(personalEvent.endTime);
+    setStartTime(start || '09:00');
+    setEndTime(end || '10:00');
   };
 
   if (!isOpen) return null;
@@ -363,7 +406,7 @@ const EventModal: React.FC<EventModalProps> = ({
               
               <div className={styles.rightButtons}>
                 <button className={styles.saveButton} onClick={handleSave}>
-                  저장
+                  {baseEventForUi && (baseEventForUi.scheduleUid || baseEventForUi.id) ? '수정' : '저장'}
                 </button>
               </div>
             </div>
@@ -422,7 +465,7 @@ const EventModal: React.FC<EventModalProps> = ({
                                   rawText: evt.title, // 임시로 title 사용
                                   content: '',
                                   createDate: new Date().toISOString(),
-                                  scheduleUid: evt.id // tscheduleUid를 scheduleUid로 변경
+                                  scheduleUid: evt.id
                                 };
                                 handlePersonalEventClick(eventData);
                               }

@@ -17,11 +17,11 @@
   display: flex;
   gap: 0;
   align-items: stretch;
-  height: calc(100vh - 140px);
+  height: calc(100vh - 100px);
 }
 
 .leftPane { flex: 1 1 0; min-width: 0; }
-.rightPane { width: 400px; min-width: 400px; border-left: 1px solid #e5e7eb; background: #fff; }
+.rightPane { display:flex; width: 400px; min-width: 400px; border-left: 1px solid #e5e7eb; background: #fff; }
 .fillChild { height: 100%; overflow: auto; }
 
 @media (max-width: 768px) {

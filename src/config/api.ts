@@ -258,7 +258,7 @@ export const apiRequest = async (
 export const authenticatedApiRequest = async (
   endpoint: string,
   options: RequestInit = {},
-  timeout: number = 10000
+  timeout: number = 300000
 ): Promise<any> => {
   // 인증 상태 확인
   if (!authService.isAuthenticated()) {

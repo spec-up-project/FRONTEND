@@ -8,13 +8,15 @@ export const API_CONFIG = {
     LOGOUT: '/api/user/logout',
     
     // 인증 필요한 API들
-    CREATE_TASK: '/api/schedule/auto',
     UPDATE_TASK: '/api/schedule',
+    INSERT_SCHEDULE_MANUAL: '/api/schedule/manual/insert',
     UPDATE_SCHEDULE_MANUAL: '/api/schedule/manual/update',
+    DELETE_SCHEDULE_MANUAL: '/api/schedule/manual/delete', // 🔥 추가: 수동 삭제 엔드포인트
+    
     UPDATE_SCHEDULE: '/api/schedule',
     CREATE_SCHEDULE: '/api/schedule/auto',
     DELETE_SCHEDULE: '/api/schedule',
-    DELETE_SCHEDULE_MANUAL: '/api/schedule/manual/delete', // 🔥 추가: 수동 삭제 엔드포인트
+    
     GET_SCHEDULES: '/api/schedule/manual/calendar',
 
     GET_SCHEDULE_DETAIL: '/api/report/detail',

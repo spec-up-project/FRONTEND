@@ -13,7 +13,7 @@ interface ScheduleEvent {
   source: string;
   createDate: string;
   modifyDate: string;
-  tscheduleUid: string;
+  scheduleUid?: string;
 }
 
 interface Event {
@@ -31,7 +31,6 @@ interface Event {
   hasReminder?: boolean;
   createDate?: string;     // 🔥 추가!
   modifyDate?: string;     // 🔥 추가!
-  tscheduleUid?: string;   // 🔥 추가!
   source?: string;         // 🔥 추가!
 }
 
@@ -62,6 +61,27 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
 
   // 색상 배열 정의
   const colors = ['blue', 'purple', 'green', 'pink', 'orange', 'red', 'teal', 'indigo'];
+
+  const padTwo = (value: number): string => String(value).padStart(2, '0');
+  const hasTimezone = (value: string): boolean => /Z|[+-]\d{2}:?\d{2}$/.test(value);
+  const parseServerDate = (value?: string): Date => {
+    if (!value) return new Date('');
+    // If no timezone is present, treat it as UTC and append 'Z'
+    const normalized = hasTimezone(value) ? value : `${value}Z`;
+    return new Date(normalized);
+  };
+  const toHHMM = (value?: string): string => {
+    if (!value) return '';
+    if (/^\d{1,2}:\d{2}$/.test(value)) {
+      const [hh, mm] = value.split(':');
+      return `${padTwo(parseInt(hh, 10))}:${mm}`;
+    }
+    const d = parseServerDate(value);
+    if (!isNaN(d.getTime())) {
+      return `${padTwo(d.getHours())}:${padTwo(d.getMinutes())}`;
+    }
+    return '';
+  };
 
   // API에서 스케줄 데이터 가져오기
   const fetchSchedules = async () => {
@@ -112,34 +132,30 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
             }
           }
 
-          const startDate = new Date(dateToUse);
-          const endDate = schedule.endTime ? new Date(schedule.endTime) : new Date(startDate.getTime() + 60 * 60 * 1000);
+          const startDate = parseServerDate(dateToUse);
+          const endDate = schedule.endTime ? parseServerDate(schedule.endTime) : new Date(startDate.getTime() + 60 * 60 * 1000);
 
           if (isNaN(startDate.getTime())) {
             console.warn('⚠️ 유효하지 않은 날짜:', dateToUse);
             return null;
           }
 
+          const uid = schedule.scheduleUid || `event-${index}`;
           const event: Event = {
-            id: schedule.tscheduleUid || `event-${index}`,
-            date: startDate.toISOString().split('T')[0],
-            time: startDate.toLocaleTimeString('ko-KR', {
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: true
-            }),
+            id: uid,
+            date: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
+            time: startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }),
             title: schedule.title || '제목 없음',
             content: schedule.content || '',
             rawText: schedule.rawText || '',
-            startTime: `${String(startDate.getHours()).padStart(2, '0')}:${String(startDate.getMinutes()).padStart(2, '0')}`,
-            endTime: `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`,
+            startTime: toHHMM(schedule.startTime) || `${padTwo(startDate.getHours())}:${padTwo(startDate.getMinutes())}`,
+            endTime: toHHMM(schedule.endTime) || `${padTwo(endDate.getHours())}:${padTwo(endDate.getMinutes())}`,
             color: colors[index % colors.length],
             isAllDay: false,
             hasTeamsMeeting: false,
             hasReminder: false,
             createDate: schedule.createDate,
             modifyDate: schedule.modifyDate,
-            tscheduleUid: schedule.tscheduleUid,
             source: schedule.source
           };
 
@@ -192,30 +208,92 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
   };
 
   // 이벤트 저장 핸들러
-  const handleSaveEvent = async (updatedEvent: Event) => {
+  const handleSaveEvent = async (updatedEvent: any) => {
     try {
-      // API 호출하여 이벤트 저장
+      // 모달에서 수동 저장된 케이스(ISO 시간, scheduleUid 포함)를 우선 처리하여 로컬 상태 갱신
+      const isManualSaved = typeof updatedEvent?.startTime === 'string' && updatedEvent.startTime.includes('T');
+      const hasServerUid = Boolean(updatedEvent?.scheduleUid);
+
+      const toHHMM = (value?: string): string => {
+        if (!value) return '';
+        if (/^\d{1,2}:\d{2}$/.test(value)) return value.length === 4 ? `0${value}` : value; // 9:00 -> 09:00
+        const d = new Date(value);
+        if (!isNaN(d.getTime())) {
+          const hh = String(d.getHours()).padStart(2, '0');
+          const mm = String(d.getMinutes()).padStart(2, '0');
+          return `${hh}:${mm}`;
+        }
+        return '';
+      };
+
+      if (isManualSaved) {
+        // 신규 생성 케이스: 서버가 UID를 즉시 주지 않는 경우 전체를 리프레시하여 정합성 확보
+        if (!hasServerUid) {
+          await fetchSchedules();
+          setIsModalOpen(false);
+          setSelectedEvent(null);
+          return;
+        }
+
+        const startDate = new Date(updatedEvent.startTime);
+        const uid = updatedEvent.scheduleUid || updatedEvent.id || `event-${Date.now()}`;
+        const existing = events.find(e => e.id === uid) || selectedEvent || null;
+        const color = existing?.color || colors[events.length % colors.length];
+        const date = !isNaN(startDate.getTime())
+          ? `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`
+          : existing?.date || formatDateKey(new Date());
+
+        const merged: Event = {
+          id: uid,
+          date,
+          time: !isNaN(startDate.getTime())
+            ? startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true })
+            : existing?.time || '09:00',
+          title: updatedEvent.title ?? existing?.title ?? '',
+          content: updatedEvent.content ?? existing?.content ?? '',
+          rawText: updatedEvent.rawText ?? existing?.rawText ?? '',
+          startTime: toHHMM(updatedEvent.startTime) || existing?.startTime || '09:00',
+          endTime: toHHMM(updatedEvent.endTime) || existing?.endTime || '10:00',
+          color,
+          isAllDay: updatedEvent.isAllDay ?? existing?.isAllDay ?? false,
+          hasTeamsMeeting: existing?.hasTeamsMeeting ?? false,
+          hasReminder: existing?.hasReminder ?? false,
+          createDate: updatedEvent.createDate ?? existing?.createDate,
+          modifyDate: updatedEvent.modifyDate ?? existing?.modifyDate,
+          source: updatedEvent.source ?? existing?.source
+        };
+
+        setEvents(prev => {
+          const idx = prev.findIndex(e => e.id === uid);
+          if (idx >= 0) {
+            const copy = prev.slice();
+            copy[idx] = merged;
+            return copy;
+          }
+          return [...prev, merged];
+        });
+
+        setIsModalOpen(false);
+        setSelectedEvent(null);
+        return;
+      }
+
+      // 기존 플로우(모달 외 저장 소스) 유지
       if (updatedEvent.id) {
-        // 기존 이벤트 수정
         await apiRequest(API_CONFIG.ENDPOINTS.UPDATE_SCHEDULE, {
           method: 'PUT',
           body: JSON.stringify(updatedEvent)
         });
-        
-        setEvents(prevEvents => 
-          prevEvents.map(evt => evt.id === updatedEvent.id ? updatedEvent : evt)
-        );
+        setEvents(prevEvents => prevEvents.map(evt => evt.id === updatedEvent.id ? updatedEvent : evt));
       } else {
-        // 새 이벤트 생성
         const response = await apiRequest(API_CONFIG.ENDPOINTS.CREATE_SCHEDULE, {
           method: 'POST',
           body: JSON.stringify(updatedEvent)
         });
-        
-        const newEvent = { ...updatedEvent, id: response.id || `event-${Date.now()}` };
+        const newEvent = { ...updatedEvent, id: response.id || `event-${Date.now()}` } as Event;
         setEvents(prevEvents => [...prevEvents, newEvent]);
       }
-      
+
       setIsModalOpen(false);
       setSelectedEvent(null);
     } catch (err) {
@@ -224,21 +302,11 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
     }
   };
 
-  // 이벤트 삭제 핸들러
-  const handleDeleteEvent = async (eventId: string) => {
-    try {
-      await apiRequest(API_CONFIG.ENDPOINTS.DELETE_SCHEDULE, {
-        method: 'DELETE',
-        body: JSON.stringify({ id: eventId })
-      });
-      
-      setEvents(prevEvents => prevEvents.filter(evt => evt.id !== eventId));
-      setIsModalOpen(false);
-      setSelectedEvent(null);
-    } catch (err) {
-      console.error('❌ 이벤트 삭제 실패:', err);
-      alert('이벤트 삭제에 실패했습니다.');
-    }
+  // 이벤트 삭제 핸들러 (모달에서 서버 삭제 완료 후 로컬 상태만 갱신)
+  const handleDeleteEvent = (eventId: string) => {
+    setEvents(prevEvents => prevEvents.filter(evt => evt.id !== eventId));
+    setIsModalOpen(false);
+    setSelectedEvent(null);
   };
 
   // 컴포넌트 마운트 시 스케줄 데이터 가져오기
