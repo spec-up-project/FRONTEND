@@ -1,6 +1,8 @@
 // API 설정 상수들 - 순환 참조 방지를 위해 분리
 export const API_CONFIG = {
   BASE_URL: import.meta.env.VITE_API_BASE_URL || 'http://192.168.45.219:8081',
+  // 'utc' | 'local' - controls how we send/parse times without timezone
+  TIME_MODE: (import.meta.env.VITE_TIME_MODE || 'local') as 'utc' | 'local',
   ENDPOINTS: {
     // 인증 관련 (토큰 불필요)
     SIGNUP: '/api/user/register',

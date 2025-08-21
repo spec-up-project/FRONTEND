@@ -64,38 +64,51 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
 
   const padTwo = (value: number): string => String(value).padStart(2, '0');
   const hasTimezone = (value: string): boolean => /Z|[+-]\d{2}:?\d{2}$/.test(value);
+  const KST_TIMEZONE = 'Asia/Seoul';
   const parseServerDate = (value?: string): Date => {
     if (!value) return new Date('');
-    if (hasTimezone(value)) {
+    if (hasTimezone(value)) return new Date(value);
+    if (API_CONFIG.TIME_MODE === 'local') {
+      const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
+      if (match) {
+        const [, y, m, d, hh, mm, ss] = match;
+        return new Date(parseInt(y, 10), parseInt(m, 10) - 1, parseInt(d, 10), parseInt(hh, 10), parseInt(mm, 10), ss ? parseInt(ss, 10) : 0);
+      }
       return new Date(value);
     }
-    // No timezone provided: interpret as LOCAL time explicitly to avoid unintended UTC shifts
-    // Expected formats: YYYY-MM-DDTHH:mm[:ss] or YYYY-MM-DD HH:mm[:ss]
-    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2}))?/);
-    if (match) {
-      const [, y, m, d, hh, mm, ss] = match;
-      const year = parseInt(y, 10);
-      const monthIndex = parseInt(m, 10) - 1;
-      const day = parseInt(d, 10);
-      const hour = parseInt(hh, 10);
-      const minute = parseInt(mm, 10);
-      const second = ss ? parseInt(ss, 10) : 0;
-      return new Date(year, monthIndex, day, hour, minute, second);
-    }
-    // Fallback to native parsing
-    return new Date(value);
+    // default to UTC behavior
+    return new Date(`${value}Z`);
   };
-  const toHHMM = (value?: string): string => {
+  // removed: use toHHMMKST for display
+
+  // Format to HH:MM in KST regardless of browser local timezone
+  const toHHMMKST = (value?: string): string => {
     if (!value) return '';
     if (/^\d{1,2}:\d{2}$/.test(value)) {
       const [hh, mm] = value.split(':');
       return `${padTwo(parseInt(hh, 10))}:${mm}`;
     }
-    const d = parseServerDate(value);
-    if (!isNaN(d.getTime())) {
-      return `${padTwo(d.getHours())}:${padTwo(d.getMinutes())}`;
-    }
-    return '';
+    const date = hasTimezone(value) ? new Date(value) : new Date(`${value}Z`);
+    if (isNaN(date.getTime())) return '';
+    const formatted = new Intl.DateTimeFormat('en-GB', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: KST_TIMEZONE
+    }).format(date);
+    // en-GB yields HH:MM
+    return formatted;
+  };
+
+  const formatYMDInKST = (date: Date): string => {
+    const formatted = new Intl.DateTimeFormat('en-CA', {
+      timeZone: KST_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit'
+    }).format(date);
+    // en-CA yields YYYY-MM-DD
+    return formatted;
   };
 
   // API에서 스케줄 데이터 가져오기
@@ -158,13 +171,14 @@ const Calendar = forwardRef<CalendarRef, CalendarProps>((props, ref) => {
           const uid = schedule.scheduleUid || `event-${index}`;
           const event: Event = {
             id: uid,
-            date: `${startDate.getFullYear()}-${String(startDate.getMonth() + 1).padStart(2, '0')}-${String(startDate.getDate()).padStart(2, '0')}`,
-            time: startDate.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true }),
+            // Ensure date/time rendered relative to KST
+            date: formatYMDInKST(startDate),
+            time: new Intl.DateTimeFormat('ko-KR', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: KST_TIMEZONE }).format(startDate),
             title: schedule.title || '제목 없음',
             content: schedule.content || '',
             rawText: schedule.rawText || '',
-            startTime: toHHMM(schedule.startTime) || `${padTwo(startDate.getHours())}:${padTwo(startDate.getMinutes())}`,
-            endTime: toHHMM(schedule.endTime) || `${padTwo(endDate.getHours())}:${padTwo(endDate.getMinutes())}`,
+            startTime: toHHMMKST(schedule.startTime) || new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: KST_TIMEZONE }).format(startDate),
+            endTime: toHHMMKST(schedule.endTime) || new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: KST_TIMEZONE }).format(endDate),
             color: colors[index % colors.length],
             isAllDay: false,
             hasTeamsMeeting: false,
